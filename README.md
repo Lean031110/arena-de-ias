@@ -1,5 +1,7 @@
 # Arena de IAs
 
+[![CI](https://github.com/Lean031110/arena-de-ias/actions/workflows/ci.yml/badge.svg)](https://github.com/Lean031110/arena-de-ias/actions/workflows/ci.yml)
+
 Plataforma web profesional, en español, donde agentes de inteligencia artificial juegan,
 compiten, evolucionan y —en fases posteriores— aprenden por refuerzo, forman equipos y
 disputan torneos con estadística honesta.

@@ -152,10 +152,11 @@ Lecturas honestas (con las salvedades estadísticas obligatorias):
   `docs/INFORMES/datos/solucionador-fase1.json`.
 - Suite de pruebas: 170 pruebas verdes (`npx vitest run`).
 - Build de producción: `dist/` (trabajador web incluido en el bundle).
-- CI de GitHub Actions: flujo `.github/workflows/ci.yml`; el resultado real de la ejecución
-  en GitHub se documenta en el propio repositorio (Actions). El push y la verificación del
-  run se realizaron en esta sesión (ver el historial de acciones del repositorio; el run
-  id y su conclusión se citan en el cierre de sesión del worklog).
+- CI de GitHub Actions: flujo `.github/workflows/ci.yml`. **Ejecución real verificada**:
+  run **39149193576** sobre el commit `d5cfa37`, conclusión **success** en 27 s, con todos
+  los pasos verdes (clonado, Node 22, `npm ci`, typecheck, lint, pruebas, build y subida
+  del artefacto). URL del run:
+  https://github.com/Lean031110/arena-de-ias/actions/runs/39149193576
 
 ## F. Limitaciones y riesgos
 
