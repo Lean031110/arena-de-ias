@@ -48,7 +48,7 @@ Módulos implementados (todo en `src/`):
 | `npx vitest run` | ✅ 19 archivos | **170** | 0 |
 | `npm run build` | ✅ 152 módulos, 210 ms | — | 0 |
 | `vite preview` + `curl` | ✅ HTTP 200 | — | 0 |
-| `npm run medir:evaluacion` | ✅ artefacto JSON | 4 experimentos (456 partidas) | 0 |
+| `npm run medir:evaluacion` | ✅ artefacto JSON | 4 experimentos (504 partidas) | 0 |
 | `npm run medir:solucionador` | ✅ artefacto JSON | 4 ejecuciones del solver | 0 |
 
 Cobertura de las pruebas obligatorias de la especificación (§8): todas presentes y verdes
@@ -85,7 +85,7 @@ las semillas registradas).
 - Gomoku y cuatro en raya: **no resueltos localmente**; ninguna tasa empírica se presenta
   como garantía de estos juegos.
 
-### D.2 Evaluación de niveles (medición directa; 4 experimentos, 456 partidas verificadas por replay)
+### D.2 Evaluación de niveles (medición directa; 4 experimentos, 504 partidas verificadas por replay)
 
 Método: round-robin con alternancia de lados por encuentro; puntuación = (V + E/2)/n;
 IC de Wilson 95 %. Presupuestos: minimax d4/60k nodos y MCTS 500 sim. en 3×3; d3/40k y 500
