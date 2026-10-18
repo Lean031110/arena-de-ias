@@ -1,0 +1,25 @@
+# Dependencias y artefactos generados
+node_modules/
+dist/
+coverage/
+*.local
+*.log
+npm-debug.log*
+
+# Secretos y credenciales — nunca versionar
+.env
+.env.*
+*.pem
+*.key
+token*.txt
+credenciales*
+
+# Entorno y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Datos de usuario generados en local (exportaciones de la app)
+descargas/
