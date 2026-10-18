@@ -23,3 +23,6 @@ Thumbs.db
 
 # Datos de usuario generados en local (exportaciones de la app)
 descargas/
+
+# Candidatas de entrenamiento en curso (los modelos promovidos se versionan en modelos/versionados/)
+modelos/candidatas/
