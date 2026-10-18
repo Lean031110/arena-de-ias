@@ -1,0 +1,129 @@
+{
+  "fecha": "2026-10-18T20:43:47.993Z",
+  "juego": "tres-en-raya-3",
+  "encuentrosPorEmparejamiento": 60,
+  "metodo": "partidas reales en el motor TS con lados alternos; presupuestos totales por jugada igualados entre bando individual y de equipo; coste medido como simulaciones totales del bando por jugada y duración por partida",
+  "resultados": [
+    {
+      "etiqueta": "individual MCTS-200 vs aleatorio",
+      "encuentros": 60,
+      "v": 50,
+      "e": 10,
+      "d": 0,
+      "puntuacion": 0.9167,
+      "ic95": [
+        0.8193,
+        0.9639
+      ],
+      "duracionMediaMs": 7,
+      "simsMediasPorJugadaBandoA": 200,
+      "presupuestoComparado": "A: 200 sims/jugada · B: sin búsqueda"
+    },
+    {
+      "etiqueta": "equipo consulta 2×MCTS-100 vs aleatorio",
+      "encuentros": 60,
+      "v": 52,
+      "e": 7,
+      "d": 1,
+      "puntuacion": 0.925,
+      "ic95": [
+        0.8299,
+        0.9689
+      ],
+      "duracionMediaMs": 7,
+      "simsMediasPorJugadaBandoA": 200,
+      "presupuestoComparado": "A: 100+100 = 200 sims/jugada (dos miembros) · B: sin búsqueda"
+    },
+    {
+      "etiqueta": "equipo turno-alternado 2×MCTS-100 vs aleatorio",
+      "encuentros": 60,
+      "v": 46,
+      "e": 13,
+      "d": 1,
+      "puntuacion": 0.875,
+      "ic95": [
+        0.7682,
+        0.9366
+      ],
+      "duracionMediaMs": 4,
+      "simsMediasPorJugadaBandoA": 100,
+      "presupuestoComparado": "A: 100 sims por jugada (un miembro decide cada jugada) · B: sin búsqueda"
+    },
+    {
+      "etiqueta": "individual MCTS-200 vs equipo consulta 2×MCTS-100",
+      "encuentros": 60,
+      "v": 16,
+      "e": 35,
+      "d": 9,
+      "puntuacion": 0.5583,
+      "ic95": [
+        0.433,
+        0.6767
+      ],
+      "duracionMediaMs": 17,
+      "simsMediasPorJugadaBandoA": 200,
+      "presupuestoComparado": "AMBOS: 200 sims/jugada totales (individual vs equipo)"
+    },
+    {
+      "etiqueta": "individual MCTS-400 vs equipo consulta 2×MCTS-200",
+      "encuentros": 60,
+      "v": 14,
+      "e": 32,
+      "d": 14,
+      "puntuacion": 0.5,
+      "ic95": [
+        0.3774,
+        0.6227
+      ],
+      "duracionMediaMs": 31,
+      "simsMediasPorJugadaBandoA": 400,
+      "presupuestoComparado": "AMBOS: 400 sims/jugada totales (individual vs equipo)"
+    },
+    {
+      "etiqueta": "individual heurístico vs aleatorio",
+      "encuentros": 60,
+      "v": 58,
+      "e": 1,
+      "d": 1,
+      "puntuacion": 0.975,
+      "ic95": [
+        0.8986,
+        0.9942
+      ],
+      "duracionMediaMs": 0,
+      "simsMediasPorJugadaBandoA": 0,
+      "presupuestoComparado": "AMBOS: sin búsqueda (reglas y azar)"
+    },
+    {
+      "etiqueta": "equipo consulta (heurístico+aleatorio) vs aleatorio",
+      "encuentros": 60,
+      "v": 50,
+      "e": 2,
+      "d": 8,
+      "puntuacion": 0.85,
+      "ic95": [
+        0.7389,
+        0.919
+      ],
+      "duracionMediaMs": 0,
+      "simsMediasPorJugadaBandoA": 0,
+      "presupuestoComparado": "A: votación heurístico+aleatorio · B: aleatorio"
+    },
+    {
+      "etiqueta": "equipo turno-alternado (heurístico+aleatorio) vs aleatorio",
+      "encuentros": 60,
+      "v": 45,
+      "e": 11,
+      "d": 4,
+      "puntuacion": 0.8417,
+      "ic95": [
+        0.7292,
+        0.913
+      ],
+      "duracionMediaMs": 0,
+      "simsMediasPorJugadaBandoA": 0,
+      "presupuestoComparado": "A: alternan heurístico y aleatorio · B: aleatorio"
+    }
+  ],
+  "lecturaHonesta": "Ninguna presuposición de superioridad: los equipos consultivos con presupuesto igualado no superan al individual con el mismo total de simulaciones (las cifras exactas, en resultados); alternar un miembro débil degrada al equipo; la votación mitiga parcialmente al miembro débil frente a alternarlo. Ver FASE-3.md §E para la lectura completa."
+}

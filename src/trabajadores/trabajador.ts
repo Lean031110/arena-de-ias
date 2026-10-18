@@ -9,7 +9,7 @@
 
 /// <reference lib="webworker" />
 import { obtenerJuego } from '../dominio/juegos/registro';
-import { crearAgente, registrarCerebroCargado, desregistrarCerebroCargado, validarConfigAgente } from '../dominio/agentes/registro';
+import { crearAgente, registrarCerebroCargado, desregistrarCerebroCargado, validarConfigAgente, registrarEquipoCargado, desregistrarEquipoCargado } from '../dominio/agentes/registro';
 import { cargarCerebro } from '../dominio/agentes/neural';
 import { comprobarCompatibilidad } from '../dominio/lba/validador';
 import { ejecutarEvaluacion } from '../dominio/motor/evaluacion';
@@ -97,6 +97,19 @@ async function manejar(solicitud: SolicitudTrabajador): Promise<void> {
       case 'retirar-cerebro': {
         desregistrarCerebroCargado(solicitud.clave);
         responder({ tipo: 'cerebro-retirado', id: solicitud.id, clave: solicitud.clave });
+        return;
+      }
+      case 'registrar-equipo': {
+        // Validación completa EN el trabajador: miembros existentes aquí
+        // (cerebros registrados en ESTE hilo), compatibilidad dura y reglas
+        // de equipo. Un equipo inválido se rechaza con error controlado.
+        const clave = registrarEquipoCargado(solicitud.equipo);
+        responder({ tipo: 'equipo-registrado', id: solicitud.id, clave });
+        return;
+      }
+      case 'retirar-equipo': {
+        desregistrarEquipoCargado(solicitud.clave);
+        responder({ tipo: 'equipo-retirado', id: solicitud.id, clave: solicitud.clave });
         return;
       }
     }

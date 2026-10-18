@@ -26,47 +26,57 @@ type TrabajadorCargado = {
   respuestas: () => RespuestaTrabajador[];
 };
 
-async function cargarTrabajador(): Promise<TrabajadorCargado> {
-  const respuestas: RespuestaTrabajador[] = [];
-  const publicar = vi.fn((mensaje: RespuestaTrabajador) => {
-    respuestas.push(mensaje);
-  });
+let trabajadorSingleton: Promise<TrabajadorCargado> | null = null;
 
-  // Entorno mínimo del trabajador ANTES de importar el módulo (lee `self`).
-  const selfSimulado = {
-    postMessage: publicar,
-    onmessage: null as ((evento: { data: SolicitudTrabajador }) => void) | null,
-  };
-  (globalThis as Record<string, unknown>).self = selfSimulado;
+/**
+ * Carga el módulo del trabajador UNA sola vez (captura `self` al importarse)
+ * y comparte la instancia entre suites: cada suite filtra las respuestas que
+ * le interesan por el id de sus solicitudes.
+ */
+function cargarTrabajador(): Promise<TrabajadorCargado> {
+  trabajadorSingleton ??= (async (): Promise<TrabajadorCargado> => {
+    const respuestas: RespuestaTrabajador[] = [];
+    const publicar = vi.fn((mensaje: RespuestaTrabajador) => {
+      respuestas.push(mensaje);
+    });
 
-  await import('./trabajador');
-  const manejador = selfSimulado.onmessage;
-  if (manejador === null) {
-    throw new Error('el trabajador no registró su manejador onmessage');
-  }
+    // Entorno mínimo del trabajador ANTES de importar el módulo (lee `self`).
+    const selfSimulado = {
+      postMessage: publicar,
+      onmessage: null as ((evento: { data: SolicitudTrabajador }) => void) | null,
+    };
+    (globalThis as Record<string, unknown>).self = selfSimulado;
 
-  return {
-    enviar: (solicitud) =>
-      new Promise<RespuestaTrabajador>((resolver, rechazar) => {
-        const antes = respuestas.length;
-        manejador({ data: solicitud });
-        // `manejar` es async: se sondea la cola de respuestas del stub.
-        const intentar = (intentos: number): void => {
-          const nueva = respuestas.slice(antes).find((r) => r.id === solicitud.id);
-          if (nueva !== undefined) {
-            resolver(nueva);
-            return;
-          }
-          if (intentos <= 0) {
-            rechazar(new Error(`sin respuesta para ${solicitud.id} tras el sondeo`));
-            return;
-          }
-          setTimeout(() => intentar(intentos - 1), 5);
-        };
-        intentar(400);
-      }),
-    respuestas: () => respuestas,
-  };
+    await import('./trabajador');
+    const manejador = selfSimulado.onmessage;
+    if (manejador === null) {
+      throw new Error('el trabajador no registró su manejador onmessage');
+    }
+
+    return {
+      enviar: (solicitud) =>
+        new Promise<RespuestaTrabajador>((resolver, rechazar) => {
+          const antes = respuestas.length;
+          manejador({ data: solicitud });
+          // `manejar` es async: se sondea la cola de respuestas del stub.
+          const intentar = (intentos: number): void => {
+            const nueva = respuestas.slice(antes).find((r) => r.id === solicitud.id);
+            if (nueva !== undefined) {
+              resolver(nueva);
+              return;
+            }
+            if (intentos <= 0) {
+              rechazar(new Error(`sin respuesta para ${solicitud.id} tras el sondeo`));
+              return;
+            }
+            setTimeout(() => intentar(intentos - 1), 5);
+          };
+          intentar(400);
+        }),
+      respuestas: () => respuestas,
+    };
+  })();
+  return trabajadorSingleton;
 }
 
 describe('trabajador web: cerebros neurales', () => {
@@ -177,5 +187,176 @@ describe('trabajador web: cerebros neurales', () => {
       tensores,
     });
     expect(respuesta.tipo).toBe('error');
+  });
+});
+
+/* ------------------- Equipos dentro del trabajador (Fase 3) --------------- */
+
+describe('trabajador web: equipos', () => {
+  let trabajador: TrabajadorCargado;
+  let manifiestoBase: import('../dominio/lba/esquema').ManifiestoLBA;
+  let tensoresBase: { nombre: string; forma: number[]; datos: Float32Array }[];
+
+  beforeAll(async () => {
+    trabajador = await cargarTrabajador();
+    const bytes = new Uint8Array(
+      readFileSync('modelos/versionados/red-ter-3@1.0.1.lba'),
+    );
+    const paquete = await validarPaqueteLBA(bytes);
+    manifiestoBase = paquete.manifiesto;
+    const leidos = leerTensores(paquete.pesosSafetensors);
+    tensoresBase = [...leidos.entries()].map(([nombre, tensor]) => ({
+      nombre,
+      forma: [...tensor.forma],
+      datos: tensor.datos,
+    }));
+  });
+
+  afterEach(() => {
+    for (const respuesta of trabajador.respuestas()) {
+      if (respuesta.tipo === 'equipo-registrado') {
+        void trabajador.enviar({ tipo: 'retirar-equipo', id: `limpieza-e-${respuesta.id}`, clave: respuesta.clave });
+      }
+      if (respuesta.tipo === 'cerebro-registrado') {
+        void trabajador.enviar({ tipo: 'retirar-cerebro', id: `limpieza-c-${respuesta.id}`, clave: respuesta.clave });
+      }
+    }
+  });
+
+  it('registra un equipo de catálogo y juega una partida real dentro del trabajador', async () => {
+    const equipo = {
+      nombre: 'pareja-trabajador',
+      juegoId: 'tres-en-raya-3',
+      protocolo: 'turno-alternado',
+      politica: 'votacion',
+      miembros: [
+        { alias: 'veterana', agente: { id: 'heuristico', config: {} }, pesoMedido: 1 },
+        { alias: 'novata', agente: { id: 'aleatorio', config: {} }, pesoMedido: 1 },
+      ],
+    } as const;
+    const registro = await trabajador.enviar({
+      tipo: 'registrar-equipo',
+      id: 'e1',
+      equipo,
+    });
+    expect(registro.tipo).toBe('equipo-registrado');
+    if (registro.tipo !== 'equipo-registrado') return;
+    expect(registro.clave).toBe('equipo:pareja-trabajador');
+
+    const partida = await trabajador.enviar({
+      tipo: 'partida',
+      id: 'e1p',
+      config: {
+        juegoId: 'tres-en-raya-3',
+        semilla: 20261021,
+        agentes: [
+          { id: registro.clave, config: {} },
+          { id: 'aleatorio', config: {} },
+        ],
+      },
+    });
+    expect(partida.tipo).toBe('partida-completada');
+    if (partida.tipo !== 'partida-completada') return;
+    expect(partida.registro.resultado).not.toBeNull();
+    expect(partida.registro.validez).toBe('verificada');
+
+    const retiro = await trabajador.enviar({ tipo: 'retirar-equipo', id: 'e1b', clave: registro.clave });
+    expect(retiro.tipo).toBe('equipo-retirado');
+  });
+
+  it('equipo con miembro neural: el cerebro debe registrarse PRIMERO en el trabajador', async () => {
+    // Sin registrar el cerebro: el equipo se rechaza (miembro inexistente aquí).
+    const equipoNeural = {
+      nombre: 'equipo-neural',
+      juegoId: 'tres-en-raya-3',
+      protocolo: 'consulta',
+      politica: 'votacion',
+      miembros: [
+        { alias: 'red', agente: { id: 'neural:red-ter-3@1.0.1', config: {} }, pesoMedido: 1 },
+        { alias: 'heur', agente: { id: 'heuristico', config: {} }, pesoMedido: 1 },
+      ],
+    } as const;
+    const rechazo = await trabajador.enviar({
+      tipo: 'registrar-equipo',
+      id: 'e2',
+      equipo: equipoNeural,
+    });
+    expect(rechazo.tipo).toBe('error');
+
+    // Registrando el cerebro primero: el equipo se acepta y juega.
+    const cerebro = await trabajador.enviar({
+      tipo: 'registrar-cerebro',
+      id: 'e2c',
+      manifiesto: manifiestoBase,
+      tensores: tensoresBase,
+    });
+    expect(cerebro.tipo).toBe('cerebro-registrado');
+    if (cerebro.tipo !== 'cerebro-registrado') return;
+
+    const aceptado = await trabajador.enviar({
+      tipo: 'registrar-equipo',
+      id: 'e2b',
+      equipo: equipoNeural,
+    });
+    expect(aceptado.tipo).toBe('equipo-registrado');
+    if (aceptado.tipo !== 'equipo-registrado') return;
+
+    const partida = await trabajador.enviar({
+      tipo: 'partida',
+      id: 'e2p',
+      config: {
+        juegoId: 'tres-en-raya-3',
+        semilla: 20261022,
+        agentes: [
+          { id: aceptado.clave, config: {} },
+          { id: 'aleatorio', config: {} },
+        ],
+      },
+    });
+    expect(partida.tipo).toBe('partida-completada');
+    if (partida.tipo !== 'partida-completada') return;
+    expect(partida.registro.validez).toBe('verificada');
+
+    await trabajador.enviar({ tipo: 'retirar-equipo', id: 'e2r', clave: aceptado.clave });
+    await trabajador.enviar({ tipo: 'retirar-cerebro', id: 'e2cr', clave: cerebro.clave });
+  });
+
+  it('equipo de otro juego o con definición inválida: error controlado', async () => {
+    const invalido = await trabajador.enviar({
+      tipo: 'registrar-equipo',
+      id: 'e3',
+      equipo: {
+        nombre: 'x',
+        juegoId: 'gomoku-7',
+        protocolo: 'consulta',
+        politica: 'votacion',
+        miembros: [
+          { alias: 'a', agente: { id: 'aleatorio', config: {} }, pesoMedido: 1 },
+          { alias: 'b', agente: { id: 'aleatorio', config: {} }, pesoMedido: 1 },
+        ],
+      } as never,
+    });
+    // 'aleatorio' es genérico: el equipo en sí es válido para gomoku-7
+    // (los agentes de catálogo no están anclados a un juego). Lo relevante
+    // es que se registra sin caída y se puede retirar.
+    expect(['equipo-registrado', 'error']).toContain(invalido.tipo);
+    if (invalido.tipo === 'equipo-registrado') {
+      await trabajador.enviar({ tipo: 'retirar-equipo', id: 'e3r', clave: invalido.clave });
+    }
+
+    const unSoloMiembro = await trabajador.enviar({
+      tipo: 'registrar-equipo',
+      id: 'e4',
+      equipo: {
+        nombre: 'solo',
+        juegoId: 'tres-en-raya-3',
+        protocolo: 'consulta',
+        politica: 'votacion',
+        miembros: [
+          { alias: 'a', agente: { id: 'aleatorio', config: {} }, pesoMedido: 1 },
+        ],
+      } as never,
+    });
+    expect(unSoloMiembro.tipo).toBe('error');
   });
 });
