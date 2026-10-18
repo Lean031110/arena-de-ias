@@ -1,0 +1,103 @@
+{
+  "titulo": "Solucionador exacto — mediciones reales de la Fase 1",
+  "fecha": "2026-10-18T17:15:54.840Z",
+  "entorno": "Node 24.21.0 (x64)",
+  "metodo": "Negamax exhaustivo sin poda alfa-beta (valores exactos) con tabla de transposición indexada por clave canónica mínima entre simetrías declaradas y presupuesto de tiempo de seguridad. completo=false ⇒ nada se declara resuelto.",
+  "ejecuciones": [
+    {
+      "juego": "tres-en-raya-3",
+      "presupuestoMs": 30000,
+      "valor": 0,
+      "jugadasOptimas": [
+        "a1",
+        "b1",
+        "c1",
+        "a2",
+        "b2",
+        "c2",
+        "a3",
+        "b3",
+        "c3"
+      ],
+      "nodos": 2271,
+      "tiempoMs": 17.28652199999999,
+      "completo": true,
+      "presupuestoAgotado": false,
+      "referenciaExterna": "El tres en raya 3×3 es un empate con juego perfecto (resultado clásico verificado independientemente en la literatura). Esta ejecución local coincide (valor 0)."
+    },
+    {
+      "juego": "tres-en-raya-4",
+      "presupuestoMs": 240000,
+      "valor": 0,
+      "jugadasOptimas": [
+        "a1",
+        "b1",
+        "c1",
+        "d1",
+        "a2",
+        "b2",
+        "c2",
+        "d2",
+        "a3",
+        "b3",
+        "c3",
+        "d3",
+        "a4",
+        "b4",
+        "c4",
+        "d4"
+      ],
+      "nodos": 6460009,
+      "tiempoMs": 48575.161061,
+      "completo": true,
+      "presupuestoAgotado": false,
+      "consistenciaPadreHijo": {
+        "todas": true,
+        "muestra": "3 de 16 jugadas óptimas (muestreo acotado por tiempo)",
+        "comprobaciones": [
+          {
+            "jugada": "a1",
+            "valorHijo": 0,
+            "esperado": 0,
+            "coincide": true
+          },
+          {
+            "jugada": "b1",
+            "valorHijo": 0,
+            "esperado": 0,
+            "coincide": true
+          },
+          {
+            "jugada": "c1",
+            "valorHijo": 0,
+            "esperado": 0,
+            "coincide": true
+          }
+        ]
+      },
+      "nota": "Resuelto localmente por búsqueda exhaustiva con tabla de transposición y simetrías (negamax exacto sin poda). Resultado: empate con juego perfecto. Verificado por consistencia interna padre/hijo y por la suite de pruebas del solucionador."
+    },
+    {
+      "juego": "gomoku-7",
+      "presupuestoMs": 1000,
+      "valor": 0,
+      "jugadasOptimas": [],
+      "nodos": 67584,
+      "tiempoMs": 1009.674291000003,
+      "completo": false,
+      "presupuestoAgotado": true,
+      "nota": "Espacio de estados fuera del alcance del solucionador genérico; registrado como no resuelto."
+    },
+    {
+      "juego": "cuatro-en-raya-7x6",
+      "presupuestoMs": 1000,
+      "valor": 0,
+      "jugadasOptimas": [],
+      "nodos": 331776,
+      "tiempoMs": 1004.3428710000007,
+      "completo": false,
+      "presupuestoAgotado": true,
+      "nota": "Resuelto externamente en la literatura (victoria del primer jugador), pero NO verificado localmente: se declara no resuelto hasta completar la verificación exigida (Fase 5)."
+    }
+  ]
+}
