@@ -10,7 +10,7 @@ import { agenteAleatorio } from './aleatorio';
 import { crearAgenteHeuristico } from './heuristico';
 import { crearAgenteMinimax, validarConfigMinimax } from './minimax';
 import { crearAgenteMCTS, validarConfigMCTS } from './mcts';
-import { ID_AGENTE_NEURAL } from './neural';
+import { ID_AGENTE_NEURAL, crearAgenteNeural, validarConfigNeural, type CerebroCargado } from './neural';
 
 export interface ParametroAgente {
   readonly clave: string;
@@ -148,16 +148,48 @@ export const CATALOGO_AGENTES: readonly DefinicionAgente[] = [
     id: ID_AGENTE_NEURAL,
     nombre: 'Agente Neuronal',
     nivel: 5,
-    version: '0',
+    version: '1',
     descripcion:
-      'Red de política y valor con MCTS guiado (estilo AlphaZero). ' +
-      'PENDIENTE DE IMPLEMENTACIÓN (Fase 2): sin pesos ni entrenamientos registrados.',
+      'Red de política y valor con MCTS-PUCT guiado (estilo AlphaZero). ' +
+      'Requiere un cerebro .lba importado y cargado: aparece al cargar uno compatible.',
     estado: 'pendiente',
-    parametros: [],
+    parametros: [
+      {
+        clave: 'simulaciones',
+        etiqueta: 'Simulaciones PUCT',
+        descripcion: 'Número exacto de simulaciones guiadas por jugada.',
+        min: 1,
+        max: 100000,
+        paso: 50,
+        defecto: 200,
+      },
+      {
+        clave: 'cPuct',
+        etiqueta: 'Constante PUCT',
+        descripcion: 'Peso del prior de política frente al valor.',
+        min: 0.1,
+        max: 10,
+        paso: 0.1,
+        defecto: 1.5,
+      },
+      {
+        clave: 'temperatura',
+        etiqueta: 'Temperatura',
+        descripcion: '0 = determinista (máx. visitas); >0 muestrea visitas^(1/T).',
+        min: 0,
+        max: 10,
+        paso: 0.1,
+        defecto: 0,
+      },
+    ],
   },
 ];
 
 export function obtenerDefinicionAgente(id: string): DefinicionAgente {
+  if (esCerebroCargado(id)) {
+    const dinamica = definicionCerebroCargado(id);
+    if (dinamica !== null) return dinamica;
+  }
   const definicion = CATALOGO_AGENTES.find((agente) => agente.id === id);
   if (definicion === undefined) {
     throw new ErrorConfiguracionInvalida(`no existe el agente «${id}»`);
@@ -170,6 +202,9 @@ export function validarConfigAgente(
   id: string,
   config: Readonly<Record<string, number | boolean>>,
 ): string[] {
+  if (esCerebroCargado(id)) {
+    return validarConfigCerebroCargado(id, config);
+  }
   const definicion = obtenerDefinicionAgente(id);
   const errores: string[] = [];
   const clavesConocidas = new Set(definicion.parametros.map((parametro) => parametro.clave));
@@ -216,6 +251,18 @@ export function crearAgente(
   id: string,
   config: Readonly<Record<string, number | boolean>>,
 ): Agente {
+  if (esCerebroCargado(id)) {
+    const errores = validarConfigCerebroCargado(id, config);
+    if (errores.length > 0) {
+      throw new ErrorConfiguracionInvalida(errores.join('; '));
+    }
+    const cerebro = cerebrosCargados().find((c) => c.idAgente === id)!.cerebro;
+    return crearAgenteNeural(cerebro, {
+      simulaciones: config['simulaciones'] as number | undefined,
+      cPuct: config['cPuct'] as number | undefined,
+      temperatura: config['temperatura'] as number | undefined,
+    });
+  }
   const errores = validarConfigAgente(id, config);
   if (errores.length > 0) {
     throw new ErrorConfiguracionInvalida(errores.join('; '));
@@ -256,4 +303,65 @@ export function agentesDisponibles(): readonly DefinicionAgente[] {
   return CATALOGO_AGENTES.filter(
     (agente) => agente.estado === 'disponible' || agente.estado === 'humano',
   );
+}
+
+/* ------- Cerebros neuronales cargados en runtime (Fase 2, ADR-015) ------- */
+
+/** Cerebro neural disponible para partidas, con su identidad completa. */
+export interface CerebroEnRegistro {
+  /** Clave de agente usable en configs de partida/evaluación. */
+  readonly idAgente: string; // «neural:<agentId>@<brainVersion>»
+  readonly cerebro: CerebroCargado;
+}
+
+const CEREBROS_CARGADOS = new Map<string, CerebroCargado>();
+
+/** Registra un cerebro cargado; devuelve la clave de agente resultante. */
+export function registrarCerebroCargado(cerebro: CerebroCargado): string {
+  const clave = `${ID_AGENTE_NEURAL}:${cerebro.agentId}@${cerebro.brainVersion}`;
+  CEREBROS_CARGADOS.set(clave, cerebro);
+  return clave;
+}
+
+/** Da de baja un cerebro cargado (la persistencia no se toca aquí). */
+export function desregistrarCerebroCargado(clave: string): boolean {
+  return CEREBROS_CARGADOS.delete(clave);
+}
+
+/** Lista de cerebros cargados actualmente. */
+export function cerebrosCargados(): readonly CerebroEnRegistro[] {
+  return [...CEREBROS_CARGADOS.entries()].map(([idAgente, cerebro]) => ({ idAgente, cerebro }));
+}
+
+/** ¿La clave corresponde a un cerebro neural cargado? */
+export function esCerebroCargado(id: string): boolean {
+  return CEREBROS_CARGADOS.has(id);
+}
+
+/** Definición dinámica de un agente neural cargado (para la interfaz). */
+export function definicionCerebroCargado(id: string): DefinicionAgente | null {
+  const cerebro = CEREBROS_CARGADOS.get(id);
+  if (cerebro === undefined) return null;
+  const base = CATALOGO_AGENTES.find((a) => a.id === ID_AGENTE_NEURAL);
+  return {
+    id,
+    nombre: `${base?.nombre ?? 'Agente Neuronal'} ${cerebro.agentId}@${cerebro.brainVersion}`,
+    nivel: 5,
+    version: cerebro.brainVersion,
+    descripcion: `Cerebro .lba cargado para «${cerebro.gameId}» (arquitectura ${cerebro.architecture.tipo}).`,
+    estado: 'disponible',
+    parametros: base?.parametros ?? [],
+  };
+}
+
+/** Valida la configuración de un agente neural cargado. */
+export function validarConfigCerebroCargado(
+  id: string,
+  config: Readonly<Record<string, number | boolean>>,
+): string[] {
+  const cerebro = CEREBROS_CARGADOS.get(id);
+  if (cerebro === undefined) {
+    return [`«${id}» no es un cerebro cargado`];
+  }
+  return validarConfigNeural(config);
 }

@@ -173,3 +173,57 @@ solucionador (o uno específico mejor) termina dentro de su presupuesto, con art
 de la ejecución.
 
 **Consecuencias (medidas, no supuestas).** Tres en raya 3×3 se resuelve y verifica contra la referencia pública (empate con juego perfecto; 2.271 nodos, ~18 ms). Tres en raya 4×4 TAMBIÉN se resolvió localmente con el solucionador genérico (6.460.009 nodos, 48,6 s con presupuesto de 240 s): **empate con juego perfecto**, con consistencia padre/hijo verificada — véase el artefacto `docs/INFORMES/datos/solucionador-fase1.json`. El borrador inicial de este ADR predecía erróneamente que el 4×4 sería resoluble «en milisegundos» y que no cabía resolverlo en CI: la medición real mostró ~49 s (viable como medición fuera de CI, no como prueba unitaria de 2 vCPU). Gomoku y cuatro en raya 7×6 exceden cualquier presupuesto razonable del solucionador genérico y quedan «no resueltos localmente» hasta incorporar solucionadores especializados con poda alfa-beta y bandas en la TT (Fase 5).
+
+## ADR-014 — Runtime de inferencia TypeScript puro; pesos SafeTensors; ONNX aplazado
+
+**Contexto.** La Fase 2 exige cerebros `.lba` entrenables en Python (PyTorch, Kaggle o
+local) y ejecutables en el navegador sin backend, manteniendo la app 100 % offline y sin
+romper el presupuesto de tamaño del bundle. Se evaluaron: ONNX Runtime Web, TensorFlow.js
+y un runtime propio en TypeScript puro.
+
+**Decisión.**
+1. **Inferencia en navegador: runtime propio «ts-puro»** que implementa la arquitectura
+   documentada `conv-politica-valor-v1` (docs/LBA-MODELO.md §4) con `Float32Array`. Cero
+   dependencias nuevas para inferencia; ~10.708 parámetros en 3×3 ⇒ inferencia < 1 ms.
+2. **Pesos: SafeTensors** (`training/weights.safetensors`), F32 LE. Es a la vez el
+   checkpoint de entrenamiento en PyTorch y el formato de inferencia en TS (cabecera JSON
+   + región de datos: analizable en ~60 líneas, sin código arbitrario, sin pickle).
+3. **Entrenamiento: PyTorch** en Python (`entrenamiento/`), exportando los pesos del
+   `state_dict` a los nombres canónicos de la especificación.
+4. **ONNX (`model.onnx`): contemplado por el formato pero aplazado.** Motivos: el paquete
+   npm de ONNX Runtime Web añade decenas de MB de WASM al bundle (o dependencia de CDN,
+   incompatible con el requisito offline) y ninguna arquitectura actual lo necesita.
+   Cuando exista un modelo que justifique ONNX, la entrada es opcional en v1 y no exige
+   cambiar el formato.
+5. **TensorFlow.js: descartado.** La conversión PyTorch→TFJS es frágil para mantener la
+   paridad exigida, y la auditoría mostró que el núcleo existente no tiene dependencia
+   alguna de TFJS que conservar (el contrato neural de Fase 1 estaba pendiente).
+
+**Verificación exigida.** Prueba de paridad PyTorch⇄TS con casete generado por Python
+(docs/LBA-MODELO.md §9): la compatibilidad nunca se declara, se comprueba.
+
+**Consecuencias.** Dependencia nueva única: `fflate` (ZIP, MIT, ~30 KB min, sin
+dependencias) para leer/escribir el contenedor `.lba`. El entrenamiento en navegador queda
+explícitamente pendiente (el runtime ts-puro ejecuta inferencia; el backprop manual no se
+implementa en esta fase y no se simula).
+
+## ADR-015 — Registro de cerebros con estados derivados de registros reales
+
+**Contexto.** El registro de modelos debe distinguir cerebros realmente cargables de
+entradas con nombre y sin sustancia, y proteger al campeón de sobrescrituras.
+
+**Decisión.** El registro vive en IndexedDB (almacenes `cerebros` y `eventosCerebros`,
+migración v1→v2 del `almacen.ts`). Un cerebro importado guarda: manifiesto validado,
+bytes del paquete `.lba` y huella SHA-256 del paquete. Los estados (`raíz`, `candidato`,
+`campeón`, `archivado`, `incompatible`) **no se almacenan como campo mutable arbitrario**:
+se derivan de los eventos registrados (importación, creación de rama, promoción con
+examen aprobado según ADR-007, archivado, incompatibilidad detectada). La promoción
+examina al candidato contra el campeón vigente y una referencia congelada con criterios
+fijados **antes** del examen; el campeón jamás se sobrescribe: el examen o promueve una
+nueva versión o registra el rechazo/regresión. La clonación y las ramas de entrenamiento
+crean entradas nuevas con linaje hacia el padre.
+
+**Consecuencias.** La UI consulta estados derivados; cualquier cifra mostrada se traza a
+eventos y evaluaciones reales. Los pesos promovidos se guardan bajo `modelos/versionados/`
+en Git (decenas de KB, apropiado) con índice de huellas; artefactos de workflow para las
+pruebas de CI.
