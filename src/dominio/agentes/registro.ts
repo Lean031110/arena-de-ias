@@ -11,6 +11,25 @@ import { crearAgenteHeuristico } from './heuristico';
 import { crearAgenteMinimax, validarConfigMinimax } from './minimax';
 import { crearAgenteMCTS, validarConfigMCTS } from './mcts';
 import { ID_AGENTE_NEURAL, crearAgenteNeural, validarConfigNeural, type CerebroCargado } from './neural';
+import {
+  esEquipoCargado,
+  equipoCargado,
+  registrarEquipoCargado,
+  desregistrarEquipoCargado,
+  equiposCargados,
+  validarEquipo,
+} from '../equipos/registro';
+import { crearAgenteEquipo } from '../equipos/agenteEquipo';
+
+// Reexportaciones de Fase 3 (equipos) para un solo punto de entrada.
+export {
+  esEquipoCargado,
+  equipoCargado,
+  registrarEquipoCargado,
+  desregistrarEquipoCargado,
+  equiposCargados,
+  validarEquipo,
+};
 
 export interface ParametroAgente {
   readonly clave: string;
@@ -190,6 +209,22 @@ export function obtenerDefinicionAgente(id: string): DefinicionAgente {
     const dinamica = definicionCerebroCargado(id);
     if (dinamica !== null) return dinamica;
   }
+  if (esEquipoCargado(id)) {
+    const equipo = equipoCargado(id);
+    if (equipo !== null) {
+      return {
+        id,
+        nombre: `Equipo ${equipo.nombre}`,
+        nivel: 6,
+        version: '1',
+        descripcion:
+          `Equipo de ${equipo.miembros.length} miembros (${equipo.protocolo}, ` +
+          `${equipo.politica}) para «${equipo.juegoId}».`,
+        estado: 'disponible',
+        parametros: [],
+      };
+    }
+  }
   const definicion = CATALOGO_AGENTES.find((agente) => agente.id === id);
   if (definicion === undefined) {
     throw new ErrorConfiguracionInvalida(`no existe el agente «${id}»`);
@@ -204,6 +239,14 @@ export function validarConfigAgente(
 ): string[] {
   if (esCerebroCargado(id)) {
     return validarConfigCerebroCargado(id, config);
+  }
+  if (esEquipoCargado(id)) {
+    // La identidad del equipo (miembros, protocolo, política) vive en su
+    // definición registrada; la config de partida no añade nada. Cualquier
+    // clave extra es un error de configuración.
+    return Object.keys(config).map(
+      (clave) => `parámetro desconocido «${clave}» para el equipo «${id}»`,
+    );
   }
   const definicion = obtenerDefinicionAgente(id);
   const errores: string[] = [];
@@ -262,6 +305,17 @@ export function crearAgente(
       cPuct: config['cPuct'] as number | undefined,
       temperatura: config['temperatura'] as number | undefined,
     });
+  }
+  if (esEquipoCargado(id)) {
+    const errores = validarConfigAgente(id, config);
+    if (errores.length > 0) {
+      throw new ErrorConfiguracionInvalida(errores.join('; '));
+    }
+    const equipo = equipoCargado(id);
+    if (equipo === null) {
+      throw new ErrorConfiguracionInvalida(`«${id}» no es un equipo cargado`);
+    }
+    return crearAgenteEquipo(equipo);
   }
   const errores = validarConfigAgente(id, config);
   if (errores.length > 0) {

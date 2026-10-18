@@ -20,7 +20,7 @@ disputan torneos con estadística honesta.
 | 0 | Arquitectura, auditoría, plan, criterios de aceptación | ✅ Completada |
 | 1 | Motor de juegos, 6 variantes, 4 niveles de agentes, evaluación real, CI | ✅ Completada (re-auditada en Fase 2: 170/170, artefactos reproducibles) |
 | 2 | Cerebros .lba, entrenamiento real PyTorch, registro, liga de versiones | ✅ Completada en su ámbito (re-auditada y corregida: workflow Kaggle reparado, afirmaciones estadísticas verificadas — 229/229 TS + 78/78 pytest; ver AUDITORIA-FASE2.md) |
-| 3 | Equipos, plantel, mentoría | ⏳ Pendiente |
+| 3 | Equipos, plantel, mentoría | 🔄 Núcleo completado y medido (consulta, parejas, plantel persistente, mentoría real, evaluación de equipos: 276/276 TS + 83/83 pytest; UI de Fase 3 pendiente — ver FASE-3.md) |
 | 4 | Torneos, Elo, Glicko-2, liga histórica | ⏳ Pendiente |
 | 5 | Juegos restantes, descubrimiento de estrategias, garantías | ⏳ Pendiente |
 
@@ -74,7 +74,7 @@ arena-de-ias/
 ├── docs/                    # documentación de arquitectura, decisiones, modelo de datos…
 │   └── INFORMES/            # informes verificables por fase (incluye auditorías)
 ├── entrenamiento/           # backend Python: motor gemelo, red PyTorch, autojuego,
-│   │                        # entrenador CLI, lba.py y pruebas (78) + kaggle/
+│   │                        # entrenador CLI, lba.py, mentoría y pruebas (83) + kaggle/
 ├── modelos/versionados/     # cerebros .lba promovidos con índice de huellas
 ├── scripts/                 # mediciones reales + verificación y examen de cerebros
 ├── src/

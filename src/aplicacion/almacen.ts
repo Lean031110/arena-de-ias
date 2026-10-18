@@ -15,16 +15,21 @@ import {
   validarRegistroPartida,
   validarRegistroCerebro,
   validarEventoCerebro,
+  validarEntradaPlantel,
+  validarEventoPlantel,
 } from './esquemas';
 import type { RegistroEventoExterno } from './tipos';
+import type { EntradaPlantel } from '../dominio/plantel/plantel';
 
 const NOMBRE_BASE = 'arena-de-ias';
-const VERSION_BASE = 2;
+const VERSION_BASE = 3;
 const ALMACEN_PARTIDAS = 'partidas';
 const ALMACEN_EVALUACIONES = 'evaluaciones';
 const ALMACEN_EVENTOS = 'eventos';
 const ALMACEN_CEREBROS = 'cerebros';
 const ALMACEN_EVENTOS_CEREBROS = 'eventosCerebros';
+const ALMACEN_PLANTEL = 'plantel';
+const ALMACEN_EVENTOS_PLANTEL = 'eventosPlantel';
 
 export interface RegistroCorrupto {
   readonly id: string;
@@ -67,6 +72,15 @@ export interface EventoCerebro {
   readonly datos?: Record<string, unknown>;
 }
 
+/** Evento del plantel (Fase 3): incorporaciones, retiros y evaluaciones. */
+export interface EventoPlantel {
+  readonly id: string;
+  readonly fecha: string;
+  readonly tipo: 'incorporado' | 'retirado' | 'evaluacion-registrada';
+  readonly entradaId: string;
+  readonly datos?: Record<string, unknown>;
+}
+
 export interface Almacenamiento {
   abrir(): Promise<void>;
   guardarPartida(registro: RegistroPartida): Promise<void>;
@@ -80,6 +94,12 @@ export interface Almacenamiento {
   listarCerebros(): Promise<ResultadoListado<RegistroCerebro>>;
   agregarEventoCerebro(evento: EventoCerebro): Promise<'nuevo' | 'duplicado'>;
   listarEventosCerebros(): Promise<ResultadoListado<EventoCerebro>>;
+  /** Plantel (Fase 3): entradas con identidad/linaje/evaluaciones. */
+  guardarEntradaPlantel(entrada: EntradaPlantel): Promise<void>;
+  listarPlantel(): Promise<ResultadoListado<EntradaPlantel>>;
+  borrarEntradaPlantel(id: string): Promise<void>;
+  agregarEventoPlantel(evento: EventoPlantel): Promise<'nuevo' | 'duplicado'>;
+  listarEventosPlantel(): Promise<ResultadoListado<EventoPlantel>>;
   borrarTodo(): Promise<void>;
 }
 
@@ -148,6 +168,12 @@ export function crearAlmacenamiento(): Almacenamiento {
             }
             if (!bd.objectStoreNames.contains(ALMACEN_EVENTOS_CEREBROS)) {
               bd.createObjectStore(ALMACEN_EVENTOS_CEREBROS, { keyPath: 'id' });
+            }
+            if (!bd.objectStoreNames.contains(ALMACEN_PLANTEL)) {
+              bd.createObjectStore(ALMACEN_PLANTEL, { keyPath: 'id' });
+            }
+            if (!bd.objectStoreNames.contains(ALMACEN_EVENTOS_PLANTEL)) {
+              bd.createObjectStore(ALMACEN_EVENTOS_PLANTEL, { keyPath: 'id' });
             }
           };
           solicitud.onsuccess = () => resolver(solicitud.result);
@@ -342,11 +368,95 @@ export function crearAlmacenamiento(): Almacenamiento {
       }
     },
 
+    async guardarEntradaPlantel(entrada: EntradaPlantel): Promise<void> {
+      try {
+        const { tx, store } = abrirTransaccion(ALMACEN_PLANTEL, 'readwrite');
+        store.put(entrada);
+        await esperarTransaccion(tx);
+      } catch (error) {
+        throw envolver(error, 'guardar entrada de plantel');
+      }
+    },
+
+    async listarPlantel(): Promise<ResultadoListado<EntradaPlantel>> {
+      try {
+        const { store } = abrirTransaccion(ALMACEN_PLANTEL, 'readonly');
+        const crudos = await pedir(store.getAll());
+        const registros: EntradaPlantel[] = [];
+        const corruptos: RegistroCorrupto[] = [];
+        for (const crudo of crudos) {
+          const registro = validarEntradaPlantel(crudo);
+          if (registro === null) {
+            const id = (crudo as { id?: unknown }).id;
+            corruptos.push({
+              id: typeof id === 'string' ? id : '(sin id)',
+              motivo: 'no supera el esquema de EntradaPlantel',
+            });
+          } else {
+            registros.push(registro);
+          }
+        }
+        registros.sort((a, b) => (a.incorporadoISO < b.incorporadoISO ? -1 : 1));
+        return { registros, corruptos };
+      } catch (error) {
+        throw envolver(error, 'listar plantel');
+      }
+    },
+
+    async borrarEntradaPlantel(id: string): Promise<void> {
+      try {
+        const { tx, store } = abrirTransaccion(ALMACEN_PLANTEL, 'readwrite');
+        store.delete(id);
+        await esperarTransaccion(tx);
+      } catch (error) {
+        throw envolver(error, 'borrar entrada de plantel');
+      }
+    },
+
+    async agregarEventoPlantel(evento: EventoPlantel): Promise<'nuevo' | 'duplicado'> {
+      try {
+        const { store: storeLectura } = abrirTransaccion(ALMACEN_EVENTOS_PLANTEL, 'readonly');
+        const existente = await pedir(storeLectura.get(evento.id));
+        if (existente !== undefined) return 'duplicado';
+        const { tx, store } = abrirTransaccion(ALMACEN_EVENTOS_PLANTEL, 'readwrite');
+        store.put(evento);
+        await esperarTransaccion(tx);
+        return 'nuevo';
+      } catch (error) {
+        throw envolver(error, 'agregar evento de plantel');
+      }
+    },
+
+    async listarEventosPlantel(): Promise<ResultadoListado<EventoPlantel>> {
+      try {
+        const { store } = abrirTransaccion(ALMACEN_EVENTOS_PLANTEL, 'readonly');
+        const crudos = await pedir(store.getAll());
+        const registros: EventoPlantel[] = [];
+        const corruptos: RegistroCorrupto[] = [];
+        for (const crudo of crudos) {
+          const registro = validarEventoPlantel(crudo);
+          if (registro === null) {
+            const id = (crudo as { id?: unknown }).id;
+            corruptos.push({
+              id: typeof id === 'string' ? id : '(sin id)',
+              motivo: 'no supera el esquema de EventoPlantel',
+            });
+          } else {
+            registros.push(registro);
+          }
+        }
+        registros.sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+        return { registros, corruptos };
+      } catch (error) {
+        throw envolver(error, 'listar eventos de plantel');
+      }
+    },
+
     async borrarTodo(): Promise<void> {
       try {
         const bd = requiereBase();
         const tx = bd.transaction(
-          [ALMACEN_PARTIDAS, ALMACEN_EVALUACIONES, ALMACEN_EVENTOS, ALMACEN_CEREBROS, ALMACEN_EVENTOS_CEREBROS],
+          [ALMACEN_PARTIDAS, ALMACEN_EVALUACIONES, ALMACEN_EVENTOS, ALMACEN_CEREBROS, ALMACEN_EVENTOS_CEREBROS, ALMACEN_PLANTEL, ALMACEN_EVENTOS_PLANTEL],
           'readwrite',
         );
         tx.objectStore(ALMACEN_PARTIDAS).clear();
@@ -354,6 +464,8 @@ export function crearAlmacenamiento(): Almacenamiento {
         tx.objectStore(ALMACEN_EVENTOS).clear();
         tx.objectStore(ALMACEN_CEREBROS).clear();
         tx.objectStore(ALMACEN_EVENTOS_CEREBROS).clear();
+        tx.objectStore(ALMACEN_PLANTEL).clear();
+        tx.objectStore(ALMACEN_EVENTOS_PLANTEL).clear();
         await esperarTransaccion(tx);
       } catch (error) {
         throw envolver(error, 'borrar todo');

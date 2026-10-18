@@ -186,3 +186,64 @@ export function validarEventoCerebro(valor: unknown): EventoCerebro | null {
   const analisis = esquemaEventoCerebro.safeParse(valor);
   return analisis.success ? (analisis.data as EventoCerebro) : null;
 }
+
+/* --------------------------- Plantel (Fase 3) ----------------------------- */
+
+import type { EventoPlantel } from './almacen';
+import type { EntradaPlantel } from '../dominio/plantel/plantel';
+
+export const esquemaResumenEvaluacion = z.object({
+  fechaISO: z.string().min(1),
+  rival: z.string().min(1),
+  partidas: z.number().int().positive(),
+  victorias: z.number().int().nonnegative(),
+  empates: z.number().int().nonnegative(),
+  derrotas: z.number().int().nonnegative(),
+  puntuacion: z.number().min(0).max(1),
+  ic95Inferior: z.number().min(0).max(1),
+  ic95Superior: z.number().min(0).max(1),
+});
+
+const esquemaIdentidadPlantel = z.discriminatedUnion('tipo', [
+  z.object({
+    tipo: z.literal('catalogo'),
+    agenteId: z.string().min(1),
+    config: z.record(z.string(), z.union([z.number(), z.boolean()])),
+  }),
+  z.object({
+    tipo: z.literal('cerebro'),
+    agentId: z.string().min(1),
+    brainVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    gameId: z.string().min(1),
+    huella: z.string().regex(/^[0-9a-f]{64}$/),
+    parentModelId: z.string().min(1).nullable(),
+    trainingRunId: z.string().min(1).nullable(),
+  }),
+]);
+
+export const esquemaEntradaPlantel = z.object({
+  id: z.string().min(3),
+  alias: z.string().min(1).max(32),
+  juegoId: z.string().min(1),
+  identidad: esquemaIdentidadPlantel,
+  incorporadoISO: z.string().min(1),
+  evaluaciones: z.array(esquemaResumenEvaluacion),
+});
+
+export const esquemaEventoPlantel = z.object({
+  id: z.string().min(1),
+  fecha: z.string().min(1),
+  tipo: z.enum(['incorporado', 'retirado', 'evaluacion-registrada']),
+  entradaId: z.string().min(3),
+  datos: z.record(z.string(), z.unknown()).optional(),
+});
+
+export function validarEntradaPlantel(valor: unknown): EntradaPlantel | null {
+  const analisis = esquemaEntradaPlantel.safeParse(valor);
+  return analisis.success ? (analisis.data as EntradaPlantel) : null;
+}
+
+export function validarEventoPlantel(valor: unknown): EventoPlantel | null {
+  const analisis = esquemaEventoPlantel.safeParse(valor);
+  return analisis.success ? (analisis.data as EventoPlantel) : null;
+}
