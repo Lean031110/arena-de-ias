@@ -9,7 +9,8 @@
 
 /// <reference lib="webworker" />
 import { obtenerJuego } from '../dominio/juegos/registro';
-import { crearAgente, validarConfigAgente } from '../dominio/agentes/registro';
+import { crearAgente, registrarCerebroCargado, desregistrarCerebroCargado, validarConfigAgente } from '../dominio/agentes/registro';
+import { cargarCerebro } from '../dominio/agentes/neural';
 import { ejecutarEvaluacion } from '../dominio/motor/evaluacion';
 import { ejecutarPartida, semillaParaJugada } from '../dominio/motor/partida';
 import { crearRng } from '../dominio/motor/rng';
@@ -70,6 +71,29 @@ async function manejar(solicitud: SolicitudTrabajador): Promise<void> {
       case 'cancelar':
         canceladas.add(solicitud.id);
         return;
+      case 'registrar-cerebro': {
+        // Los pesos viajan validados desde el hilo principal: aquí solo se
+        // reconstruye el mapa de tensores y se registra en ESTE hilo para que
+        // las partidas del trabajador puedan usar el agente «neural:…».
+        const tensores = new Map(
+          solicitud.tensores.map((t) => [t.nombre, { nombre: t.nombre, forma: [...t.forma], datos: t.datos }]),
+        );
+        const cerebro = cargarCerebro(
+          solicitud.manifiesto.agentId,
+          solicitud.manifiesto.brainVersion,
+          solicitud.manifiesto.gameId,
+          solicitud.manifiesto.architecture,
+          tensores,
+        );
+        const clave = registrarCerebroCargado(cerebro);
+        responder({ tipo: 'cerebro-registrado', id: solicitud.id, clave });
+        return;
+      }
+      case 'retirar-cerebro': {
+        desregistrarCerebroCargado(solicitud.clave);
+        responder({ tipo: 'cerebro-retirado', id: solicitud.id, clave: solicitud.clave });
+        return;
+      }
     }
   } catch (error) {
     const mensaje = error instanceof Error ? error.message : String(error);

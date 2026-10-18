@@ -1,0 +1,4 @@
+# CLI oficial de Kaggle para el workflow manual de entrenamiento.
+# Decisión (docs/INFORMES/FASE-2.md §F): CLI oficial en vez de acción de
+# terceros; versión fijada para reproducibilidad.
+kaggle==2.2.4

@@ -8,6 +8,8 @@ import type { Evento } from '../../dominio/motor/eventos';
 import type { RegistroEventoExterno } from '../../aplicacion/tipos';
 
 export interface EstadoAlmacen {
+  /** Instancia subyacente (para servicios de Fase 2 como RegistroCerebros). */
+  readonly almacen: Almacenamiento;
   readonly disponible: boolean;
   readonly partidas: readonly RegistroPartida[];
   readonly evaluaciones: readonly RegistroEvaluacion[];
@@ -135,6 +137,7 @@ export function useAlmacen(): EstadoAlmacen {
   );
 
   return {
+    almacen,
     disponible,
     partidas,
     evaluaciones,

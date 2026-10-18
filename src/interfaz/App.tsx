@@ -4,6 +4,8 @@ import { Navegacion } from './componentes/Navegacion';
 import type { Vista } from './componentes/Navegacion';
 import { PanelArena } from './componentes/PanelArena';
 import { PanelResultados } from './componentes/PanelResultados';
+import { PanelCerebros } from './componentes/PanelCerebros';
+import { PanelLiga } from './componentes/PanelLiga';
 import { PanelRegistro } from './componentes/PanelRegistro';
 import { PanelAgentes } from './componentes/PanelAgentes';
 import { PanelGuia } from './componentes/PanelGuia';
@@ -57,14 +59,17 @@ export function App() {
             onReproducir={reproducirDesdeResultados}
           />
         )}
+        {vista === 'cerebros' && <PanelCerebros almacen={almacen.almacen} cliente={cliente} alIrAArena={irAArena} />}
+        {vista === 'liga' && <PanelLiga almacen={almacen.almacen} />}
         {vista === 'registro' && <PanelRegistro almacen={almacen} />}
         {vista === 'agentes' && <PanelAgentes />}
         {vista === 'guia' && <PanelGuia />}
       </main>
 
       <footer className="pie">
-        Arena de IAs · Fase 1 — motor de juegos, cuatro niveles de agentes y evaluación con
-        integridad de datos. Sin telemetría; funciona sin conexión.
+        Arena de IAs · Fase 2 — motor de juegos, agentes con cerebros .lba entrenables en Python y
+        evaluación con integridad de datos. Sin telemetría; funciona sin conexión (el entrenamiento
+        intensivo requiere el backend Python o Kaggle, nunca el navegador).
       </footer>
     </>
   );

@@ -22,6 +22,7 @@
 
 import { ejecutarPartida } from '../dominio/motor/partida';
 import { intervaloWilson, type IntervaloWilson } from '../dominio/motor/estadistica';
+import { obtenerJuego } from '../dominio/juegos/registro';
 import type { RegistroCerebros } from './registroCerebros';
 
 /** Criterios de promoción congelados (ADR-007). No ajustar tras ver datos. */
@@ -99,7 +100,6 @@ export async function examinarCandidata(
 ): Promise<ResultadoExamen> {
   const criterios = opciones.criterios ?? CRITERIOS_PROMOCION_V1;
   const claveCandidata = await registro.cargar(candidata.agentId, candidata.brainVersion);
-  const { obtenerJuego } = await import('../dominio/juegos/registro');
   const juego = obtenerJuego(opciones.juegoId);
   const referencia = REFERENCIAS_CONGELADAS[opciones.juegoId];
   if (referencia === undefined) {

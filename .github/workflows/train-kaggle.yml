@@ -1,0 +1,229 @@
+name: Entrenamiento en Kaggle (manual)
+
+# Flujo GitHub Actions → Kaggle → .lba (Tarea F, docs/INFORMES/FASE-2.md §F).
+#
+# Solo ejecución MANUAL (workflow_dispatch): no se consume GPU en cada push.
+# Secretos requeridos (jamás en código, logs ni artefactos):
+#   - KAGGLE_USERNAME
+#   - KAGGLE_KEY
+#
+# Ciclo completo y verificable:
+#   1. Genera el kernel con los parámetros de entrada (commit exacto).
+#   2. kaggle kernels push        (CLI oficial, versión fijada).
+#   3. kaggle kernels status      (sondeo con tiempo límite).
+#   4. kaggle kernels output      (descarga de la salida REAL del kernel).
+#   5. Localiza el .lba generado; sin .lba → la ejecución global FALLA.
+#   6. Valida el paquete en el runner con el validador TS COMPLETO
+#      (scripts/verificar-lba.ts) y comprueba la huella sha256 contra el
+#      registro de entrenamiento descargado.
+#   7. Publica .lba + registro como artefacto del workflow.
+#
+# ESTADO: implementado y revisado; NO ejecutado contra Kaggle en esta sesión
+# (sin credenciales del usuario). Ejecución: pestaña Actions → «Entrenamiento
+# en Kaggle (manual)» → Run workflow. Verificación local del núcleo:
+# el kernel ejecuta el mismo entrenamiento probado en local (run 20261019-ter3-001).
+
+on:
+  workflow_dispatch:
+    inputs:
+      semilla:
+        description: 'Semilla del entrenamiento (reproducibilidad)'
+        required: true
+        default: '20261019'
+      iteraciones:
+        description: 'Iteraciones de autojuego'
+        required: true
+        default: '5'
+      partidas:
+        description: 'Partidas por iteración'
+        required: true
+        default: '32'
+      simulaciones:
+        description: 'Simulaciones MCTS por jugada'
+        required: true
+        default: '96'
+      pasos:
+        description: 'Pasos de optimización por iteración'
+        required: true
+        default: '48'
+      agente:
+        description: 'Identificador del agente (agentId)'
+        required: true
+        default: 'red-ter-3'
+      version-cerebro:
+        description: 'Versión del cerebro (X.Y.Z)'
+        required: true
+        default: '1.0.0'
+      minutos-limite:
+        description: 'Minutos máximos de espera del kernel'
+        required: true
+        default: '45'
+      usar-gpu:
+        description: 'Solicitar GPU en Kaggle (false = CPU)'
+        required: true
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  entrenar-kaggle:
+    name: Enviar kernel, esperar y recuperar el .lba
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # Los secretos NUNCA se imprimen; el CLI los lee del entorno.
+      KAGGLE_CONFIG_DIR: ${{ github.workspace }}/.kaggle
+    steps:
+      - name: Clonar repositorio (commit exacto)
+        uses: actions/checkout@v4
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias TS (versiones exactas)
+        run: npm ci
+
+      - name: Instalar Python 3.12 y CLI de Kaggle (versión fijada)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r entrenamiento/requirements-kaggle.txt
+
+      - name: Preparar credenciales de Kaggle (sin eco)
+        run: |
+          mkdir -p "$KAGGLE_CONFIG_DIR"
+          chmod 700 "$KAGGLE_CONFIG_DIR"
+          printf '{"username":"%s","key":"%s"}\n' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > "$KAGGLE_CONFIG_DIR/kaggle.json"
+          chmod 600 "$KAGGLE_CONFIG_DIR/kaggle.json"
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+
+      - name: Generar kernel con parámetros de entrada
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+        run: |
+          python - << 'PY'
+          import json, os
+          from pathlib import Path
+
+          commit = os.environ["GITHUB_SHA"]
+          run_id = f"{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}"
+          params = {
+              "semilla": int("${{ inputs.semilla }}"),
+              "iteraciones": int("${{ inputs.iteraciones }}"),
+              "partidas": int("${{ inputs.partidas }}"),
+              "simulaciones": int("${{ inputs.simulaciones }}"),
+              "pasos": int("${{ inputs.pasos }}"),
+              "lote": 64,
+              "lr": 0.002,
+              "evalPartidas": 40,
+              "agentId": "${{ inputs.agente }}",
+              "version": "${{ inputs.version-cerebro }}",
+              "runId": run_id,
+          }
+          plantilla = Path("entrenamiento/kaggle/plantilla-kernel.py").read_text(encoding="utf-8")
+          kernel = plantilla.replace("__COMMIT__", commit).replace("__PARAMS__", json.dumps(params))
+          destino = Path("entrenamiento/kaggle/kernel.py")
+          destino.write_text(kernel, encoding="utf-8")
+
+          usuario = os.environ["KAGGLE_USERNAME"]
+          slug = f"arena-de-ias-entrenamiento-{run_id}".lower()
+          metadata = {
+              "id": f"{usuario}/{slug}",
+              "title": f"arena-de-ias-entrenamiento-{run_id}",
+              "code_file": "kernel.py",
+              "language": "python",
+              "kernel_type": "script",
+              "is_private": True,
+              "enable_gpu": ${{ inputs.usar-gpu }},
+              "enable_internet": True,
+              "kernel_sources": [],
+              "kernel_datasets": [],
+              "competition_sources": [],
+          }
+          Path("entrenamiento/kaggle/kernel-metadata.json").write_text(json.dumps(metadata, indent=2))
+          Path("entrenamiento/kaggle/slug.txt").write_text(f"{usuario}/{slug}")
+          print("kernel generado para el commit", commit[:12])
+          PY
+
+      - name: Enviar kernel a Kaggle
+        run: |
+          kaggle kernels push -p entrenamiento/kaggle
+          echo "Kernel enviado. Esperando ejecución…"
+
+      - name: Esperar a que el kernel termine (sondeo con límite)
+        run: |
+          SLUG="$(cat entrenamiento/kaggle/slug.txt)"
+          LIMITE="${{ inputs.minutos-limite }}"
+          INICIO=$(date +%s)
+          while true; do
+            ESTADO="$(kaggle kernels status "$SLUG" 2>/dev/null | sed 's/^.*[[:space:]]//')"
+            case "$ESTADO" in
+              complete) echo "Kernel completado."; exit 0 ;;
+              error|cancelAcknowledged)
+                echo "::error::El kernel terminó con estado $ESTADO. Consulta los logs: kaggle kernels output $SLUG"
+                exit 1 ;;
+              *)
+                TRANSCURRIDOS=$(( ( $(date +%s) - INICIO ) / 60 ))
+                if [ "$TRANSCURRIDOS" -ge "$LIMITE" ]; then
+                  echo "::error::Tiempo de espera agotado ($LIMITE min, estado: $ESTADO)."
+                  exit 1
+                fi
+                echo "estado: $ESTADO ($TRANSCURRIDOS min transcurridos)…"
+                sleep 60 ;;
+            esac
+          done
+
+      - name: Recuperar la salida real del kernel
+        run: |
+          SLUG="$(cat entrenamiento/kaggle/slug.txt)"
+          mkdir -p salida-kernel
+          kaggle kernels output "$SLUG" -p salida-kernel
+          echo "--- archivos recuperados ---"
+          ls -la salida-kernel
+
+      - name: Localizar el .lba generado (sin él, la ejecución FALLA)
+        run: |
+          shopt -s nullglob
+          LBA=(salida-kernel/*.lba)
+          if [ ${#LBA[@]} -eq 0 ]; then
+            echo "::error::El kernel terminó pero NO produjo ningún .lba: la ejecución se marca como fallida."
+            exit 1
+          fi
+          echo "LBA_ENCONTRADO=${LBA[0]}" >> "$GITHUB_ENV"
+          echo ".lba recuperado: ${LBA[0]}"
+
+      - name: Comprobar huella contra el registro de entrenamiento
+        run: |
+          REGISTRO=(salida-kernel/*-registro.json)
+          if [ ${#REGISTRO[@]} -eq 0 ]; then
+            echo "::error::Sin registro de entrenamiento junto al .lba: no hay trazabilidad."
+            exit 1
+          fi
+          python - << 'PY'
+          import hashlib, json, glob, os, sys
+          registro = json.load(open(glob.glob("salida-kernel/*-registro.json")[0]))
+          declarada = registro["paquete"]["sha256"]
+          real = hashlib.sha256(open(os.environ["LBA_ENCONTRADO"], "rb").read()).hexdigest()
+          print("huella declarada:", declarada)
+          print("huella recalculada:", real)
+          sys.exit(0 if declarada == real else 1)
+          PY
+
+      - name: Validar el paquete en el runner (validador TS completo + partidas reales)
+        run: npx tsx scripts/verificar-lba.ts "$LBA_ENCONTRADO" 12
+
+      - name: Publicar .lba y registro como artefacto del workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: cerebro-entrenado-${{ inputs.agente }}-${{ inputs.version-cerebro }}
+          path: |
+            salida-kernel/*.lba
+            salida-kernel/*-registro.json
+          retention-days: 30
