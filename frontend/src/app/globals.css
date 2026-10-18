@@ -1,0 +1,352 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-chakra-petch);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* ─── Identidad Arena de IAs ─── */
+  --color-acento: var(--acento);
+  --color-acento-fuerte: var(--acento-fuerte);
+  --color-acento-suave: var(--acento-suave);
+  --color-fondo: var(--fondo);
+  --color-fondo-alt: var(--fondo-alt);
+  --color-tarjeta-2: var(--tarjeta-2);
+  --color-elevado: var(--elevado);
+  --color-borde-activo: var(--borde-activo);
+  --color-texto-suave: var(--texto-suave);
+  --color-texto-tenue: var(--texto-tenue);
+  --color-faccion-a: var(--faccion-a);
+  --color-faccion-b: var(--faccion-b);
+  --color-exito: var(--exito);
+  --color-peligro: var(--peligro);
+  --color-info: var(--info);
+  --color-advertencia: var(--advertencia);
+  --color-tablero-fondo: var(--tablero-fondo);
+  --color-tablero-lineas: var(--tablero-lineas);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TEMA OSCURO — «Consola táctica» (por defecto)
+   Continuidad con la identidad del núcleo: ámbar sobre azul noche.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --radius: 0.75rem;
+
+  --background: #0a0f1c;
+  --foreground: #e9eef8;
+  --card: #111a2e;
+  --card-foreground: #e9eef8;
+  --popover: #14203a;
+  --popover-foreground: #e9eef8;
+  --primary: #e8b64c;
+  --primary-foreground: #141005;
+  --secondary: #17223c;
+  --secondary-foreground: #c8d4ea;
+  --muted: #16203a;
+  --muted-foreground: #9aacc9;
+  --accent: #1c2a48;
+  --accent-foreground: #e9eef8;
+  --destructive: #ef6b78;
+  --border: #26334e;
+  --input: #2a3a5a;
+  --ring: #e8b64c;
+  --chart-1: #e8b64c;
+  --chart-2: #7cc4ff;
+  --chart-3: #3ecf8e;
+  --chart-4: #f2c744;
+  --chart-5: #ef6b78;
+
+  --sidebar: #0c1322;
+  --sidebar-foreground: #c8d4ea;
+  --sidebar-primary: #e8b64c;
+  --sidebar-primary-foreground: #141005;
+  --sidebar-accent: #17223c;
+  --sidebar-accent-foreground: #e9eef8;
+  --sidebar-border: #1e2b46;
+  --sidebar-ring: #e8b64c;
+
+  /* ── Identidad propia ── */
+  --fondo: #0a0f1c;
+  --fondo-alt: #0d1424;
+  --tarjeta-2: #17223c;
+  --elevado: #1c2a48;
+  --borde-activo: #3d5178;
+  --texto-suave: #9aacc9;
+  --texto-tenue: #647699;
+  --acento: #e8b64c;
+  --acento-fuerte: #f5c866;
+  --acento-suave: rgba(232, 182, 76, 0.13);
+  --faccion-a: #e8b64c;
+  --faccion-b: #7cc4ff;
+  --exito: #3ecf8e;
+  --peligro: #ef6b78;
+  --info: #6fb3ff;
+  --advertencia: #f2c744;
+  --tablero-fondo: #0d1526;
+  --tablero-lineas: #26334e;
+
+  --sombra-panel: 0 14px 40px rgba(2, 6, 16, 0.5);
+  --linea-hud: rgba(232, 182, 76, 0.55);
+  --rejilla: rgba(122, 154, 208, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TEMA CLARO — «Laboratorio» (marfil cálido, coherente con el núcleo)
+   ═══════════════════════════════════════════════════════════════════ */
+.light {
+  --background: #f4f2ec;
+  --foreground: #26231c;
+  --card: #ffffff;
+  --card-foreground: #26231c;
+  --popover: #ffffff;
+  --popover-foreground: #26231c;
+  --primary: #a66b12;
+  --primary-foreground: #fdf9ef;
+  --secondary: #f0ede4;
+  --secondary-foreground: #4a463b;
+  --muted: #efece2;
+  --muted-foreground: #6b675c;
+  --accent: #e9e4d6;
+  --accent-foreground: #26231c;
+  --destructive: #c02f3e;
+  --border: #ddd6c3;
+  --input: #cfc7b0;
+  --ring: #a66b12;
+  --chart-1: #a66b12;
+  --chart-2: #1f6fd8;
+  --chart-3: #178a57;
+  --chart-4: #b98a00;
+  --chart-5: #c02f3e;
+
+  --sidebar: #efece0;
+  --sidebar-foreground: #3c382d;
+  --sidebar-primary: #a66b12;
+  --sidebar-primary-foreground: #fdf9ef;
+  --sidebar-accent: #e6e1d2;
+  --sidebar-accent-foreground: #26231c;
+  --sidebar-border: #d9d2bd;
+  --sidebar-ring: #a66b12;
+
+  /* ── Identidad propia ── */
+  --fondo: #f4f2ec;
+  --fondo-alt: #eceadd;
+  --tarjeta-2: #f5f2e9;
+  --elevado: #ffffff;
+  --borde-activo: #b5ac93;
+  --texto-suave: #6b675c;
+  --texto-tenue: #98937f;
+  --acento: #a66b12;
+  --acento-fuerte: #7c500b;
+  --acento-suave: rgba(166, 107, 18, 0.1);
+  --faccion-a: #a66b12;
+  --faccion-b: #1f6fd8;
+  --exito: #178a57;
+  --peligro: #c02f3e;
+  --info: #1f6fd8;
+  --advertencia: #9a6a00;
+  --tablero-fondo: #efece2;
+  --tablero-lineas: #c9c2ae;
+
+  --sombra-panel: 0 10px 30px rgba(60, 50, 30, 0.12);
+  --linea-hud: rgba(166, 107, 18, 0.6);
+  --rejilla: rgba(90, 82, 60, 0.06);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--acento-suave);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   UTILIDADES DEL SISTEMA VISUAL
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Textura de rejilla técnica de fondo (solo capa decorativa) */
+.fondo-rejilla {
+  background-image:
+    linear-gradient(var(--rejilla) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rejilla) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+/* Resplandor ambiental superior discreto */
+.resplandor-superior {
+  background:
+    radial-gradient(900px 340px at 50% -120px, var(--acento-suave), transparent 70%);
+}
+
+/* Etiquetas HUD: versalitas espaciadas para rótulos de panel */
+.etiqueta-hud {
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--texto-tenue);
+  font-family: var(--font-chakra-petch), var(--font-geist-sans), sans-serif;
+}
+
+/* Cifras de consola: números tabulares monoespaciados */
+.cifras {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Tipografía de display táctica */
+.display-tactico {
+  font-family: var(--font-chakra-petch), var(--font-geist-sans), sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Esquinas HUD: corchetes en las cuatro esquinas de un panel clave */
+.panel-hud {
+  position: relative;
+}
+.panel-hud::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(var(--linea-hud), var(--linea-hud)) left 0 top 0 / 14px 2px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) left 0 top 0 / 2px 14px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) right 0 top 0 / 14px 2px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) right 0 top 0 / 2px 14px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) left 0 bottom 0 / 14px 2px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) left 0 bottom 0 / 2px 14px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) right 0 bottom 0 / 14px 2px,
+    linear-gradient(var(--linea-hud), var(--linea-hud)) right 0 bottom 0 / 2px 14px;
+  background-repeat: no-repeat;
+  opacity: 0.7;
+}
+
+/* Led de estado */
+.led {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex: none;
+  box-shadow: 0 0 6px currentColor;
+}
+.led-animado {
+  animation: latido-led 2.2s ease-in-out infinite;
+}
+@keyframes latido-led {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Aparición discreta de vistas */
+.entrada-suave {
+  animation: entrada-suave 240ms ease-out;
+}
+@keyframes entrada-suave {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Barras de desplazamiento discretas (WebKit) */
+.desplazamiento::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.desplazamiento::-webkit-scrollbar-thumb {
+  background: var(--borde-activo);
+  border-radius: 8px;
+}
+.desplazamiento::-webkit-scrollbar-track {
+  background: transparent;
+}
+.desplazamiento {
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde-activo) transparent;
+}
+
+/* Tablero táctico: cursor de captura */
+.cursor-mapa {
+  cursor: grab;
+}
+.cursor-mapa:active {
+  cursor: grabbing;
+}
+
+/* Movimiento reducido: anula toda animación no esencial */
+html.movimiento-reducido *,
+html.movimiento-reducido *::before,
+html.movimiento-reducido *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(.movimiento-pleno) *,
+  html:not(.movimiento-pleno) *::before,
+  html:not(.movimiento-pleno) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

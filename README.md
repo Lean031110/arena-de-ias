@@ -1,3 +1,7 @@
+<div align="center">
+
+<img src="docs/assets/logo-banner.png" alt="Arena de IAs — laboratorio de competición de agentes" width="560">
+
 # Arena de IAs
 
 [![CI](https://github.com/Lean031110/arena-de-ias/actions/workflows/ci.yml/badge.svg)](https://github.com/Lean031110/arena-de-ias/actions/workflows/ci.yml)
@@ -5,6 +9,12 @@
 Plataforma web profesional, en español, donde agentes de inteligencia artificial juegan,
 compiten, evolucionan y —en fases posteriores— aprenden por refuerzo, forman equipos y
 disputan torneos con estadística honesta.
+
+**Identidad visual del proyecto:** el hexágono-arena contiene una rejilla de juego (los tableros
+de la Fase 1) y dos agentes —dorado y azul, los colores de los jugadores del motor— conectados
+por trazas al núcleo central de la arena. [Fuentes del logotipo](./docs/assets/).
+
+</div>
 
 > **Principio rector del proyecto: integridad de los datos.**
 > Ninguna cifra se muestra sin provenir de una medición real o de un cálculo reproducible
@@ -25,6 +35,41 @@ disputan torneos con estadística honesta.
 | 5 | Juegos restantes, descubrimiento de estrategias, garantías | ⏳ Pendiente |
 
 Informes verificables por fase en [`docs/INFORMES/`](./docs/INFORMES/).
+
+## Prototipo visual — «Consola de observación»
+
+> Rama: [`frontend/prototipo-visual`](https://github.com/Lean031110/arena-de-ias/tree/frontend/prototipo-visual) ·
+> [Documentación del frontend](./frontend/README.md) ·
+> [Informe verificable de la entrega](./docs/frontend/INFORME-VISUAL.md) ·
+> [Guía de integración en el núcleo](./docs/frontend/INTEGRACION.md)
+
+La experiencia de observación de la plataforma está disponible como **prototipo visual
+independiente** (Next.js 16 + Tailwind 4, aislado del núcleo Vite): panel de control,
+simulador de partidas con los **juegos y agentes reales del motor** (dominio vendorizado
+sin modificar, commit `a908319`), simulador táctico 2D con contrato propio, plantel,
+importador «.lba» con validación honestamente pendiente, entrenamiento, explorador de
+búsqueda, torneos con evaluación round-robin real e intervalo de Wilson, auditoría de
+métricas y ajustes de accesibilidad.
+
+| | | |
+|---|---|---|
+| ![Panel de control](docs/screenshots/panel.png) | ![Simulador de partidas](docs/screenshots/arena.png) | ![Simulador táctico](docs/screenshots/tactico.png) |
+| **Panel de control** — servicios y verificaciones reales | **Simulador de partidas** — motor real, pausa/paso/velocidad | **Simulador táctico** — sandbox visual v0.1.0 |
+| ![Plantel de IAs](docs/screenshots/plantel.png) | ![Torneos](docs/screenshots/torneos.png) | ![Explorador](docs/screenshots/explorador.png) |
+| **Plantel de IAs** — catálogo real del núcleo | **Torneos** — round-robin local con IC de Wilson | **Búsqueda y repetición** — estadísticas por jugada |
+
+Móvil (390 px) y tema claro «Laboratorio» verificados:
+
+<p>
+<img src="docs/screenshots/movil-panel.png" width="240" alt="Vista móvil del panel">
+<img src="docs/screenshots/movil-tactico.png" width="240" alt="Vista móvil del simulador táctico">
+<img src="docs/screenshots/claro-importador.png" width="360" alt="Importador en tema claro">
+</p>
+
+El prototipo respeta la misma regla de integridad: cada métrica declara su procedencia,
+los servicios sin conectar muestran estados vacíos explicados y las estructuras sintéticas
+llevan marca permanente de demostración. La incorporación al núcleo está guiada por
+[`docs/frontend/INTEGRACION.md`](./docs/frontend/INTEGRACION.md).
 
 ## Requisitos
 
@@ -70,7 +115,15 @@ npm run medir:solucionador # resolución exacta de tableros pequeños → JSON c
 ```
 arena-de-ias/
 ├── docs/                    # documentación de arquitectura, decisiones, modelo de datos…
+│   ├── assets/              # logotipo del proyecto (SVG y PNG)
+│   ├── screenshots/         # capturas del prototipo visual
+│   ├── frontend/            # informe de la entrega visual, guía de integración, atribuciones
 │   └── INFORMES/            # informes verificables por fase
+├── frontend/                # 🎨 PROTOTIPO VISUAL (rama frontend/prototipo-visual):
+│   │                        #    consola de observación Next.js 16 con el motor real vendorizado
+│   ├── src/motor-central/   #    dominio del núcleo copiado 1:1 (commit a908319) — no modificar
+│   ├── src/lib/             #    contratos de integración + servicios + sandbox táctico
+│   └── src/components/arena/#    sistema visual (10 vistas, temas, accesibilidad)
 ├── scripts/                 # scripts de medición real (evaluación, solucionador)
 ├── src/
 │   ├── dominio/             # NÚCLEO: independiente de React y del navegador
