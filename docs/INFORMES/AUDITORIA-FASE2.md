@@ -167,15 +167,30 @@ errores y timeout). Corregido: `.venv` y `salida-kernel` añadidos a
 
 ## 3. Kaggle: prueba pequeña en CPU (Tarea 2, ejecución)
 
-Los secretos existen (§0). Conforme a las instrucciones, se lanzó una prueba
-pequeña en CPU tras las correcciones (parámetros mínimos: 1 iteración, 4
-partidas, 24 simulaciones) a través de `workflow_dispatch` sobre la rama de
-Fase 2. Estado al cierre de esta auditoría: **pendiente de registro del
-resultado** — la sección se actualiza con la evidencia (run del workflow,
-kernel de Kaggle, `.lba` recuperado, huella verificada y validación TS) o con
-el fallo y su diagnóstico si no se completa. Hasta entonces, el estado honesto
-del ciclo Kaggle es: «lógica corregida y probada por unidades; ciclo real
-completo pendiente de evidencia».
+Los secretos existen (§0). Se intentó lanzar la prueba pequeña en CPU
+(parametría mínima: 1 iteración, 4 partidas, 24 simulaciones, 8 pasos,
+`usar-gpu=false`) vía `POST …/actions/workflows/train-kaggle.yml/dispatches`
+sobre `feat/lba-model-registry-training`. **Resultado: HTTP 404** — GitHub
+solo registra para dispatch los workflows presentes en la rama por defecto
+(`main`), y `train-kaggle.yml` no está fusionado aún (fusionar el PR de Fase 2
+sin autorización está prohibido; verificado listando
+`/actions/workflows`: solo `ci.yml` figura). Las credenciales de Kaggle solo
+existen como secretos de Actions, cuyos valores son ilegibles por diseño, de
+modo que el ciclo real tampoco puede ejecutarse desde fuera de GitHub.
+
+Estado final honesto del ciclo Kaggle en esta entrega:
+
+- Lógica del flujo: **corregida y probada por unidades** (51 pruebas pytest +
+  verificación de los formatos reales contra el código fuente de la CLI
+  2.2.4 + generación de kernel/metadatos reproducida localmente).
+- Secretos disponibles: sí (existen, no expuestos).
+- Ejecución real de ida y vuelta: **PENDIENTE**, con el procedimiento exacto
+  fijado: tras fusionar el PR de Fase 2 → Actions → «Entrenamiento en Kaggle
+  (manual)» → Run workflow (semilla 20261019, iteraciones 1, partidas 4,
+  simulaciones 24, pasos 8, agente red-ter-3, versión 1.0.2, CPU) → esperar →
+  comprobar artefacto `cerebro-entrenado-red-ter-3-1.0.2` y su huella contra
+  el registro incluido. Solo después de recuperar y validar un `.lba` real
+  tiene sentido una ejecución con GPU.
 
 ## 4. Batería final tras las correcciones
 

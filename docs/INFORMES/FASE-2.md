@@ -269,12 +269,22 @@ futuros (pendiente de ADR; jamás retroactiva). Artefactos:
   secretos.
 - Los secretos `KAGGLE_USERNAME` y `KAGGLE_KEY` EXISTEN como secretos de
   Actions (verificado vía API el 2026-10-19, sin exponer sus valores).
-- **Ejecución de prueba pequeña en CPU**: lanzada como parte de esta revisión
-  para validar el ciclo completo de ida y vuelta con un kernel real; el
-  resultado se documenta en `docs/INFORMES/AUDITORIA-FASE2.md` (§Kaggle) y se
-  actualiza este apartado con la evidencia (run, artefacto recuperado, huella
-  y validación). Mientras esa evidencia no exista, el estado honesto es
-  «preparado y probado por unidades; ciclo real pendiente de registrar».
+- **Ejecución de prueba pequeña en CPU: INTENTADA y bloqueada por una
+  limitación real, documentada con precisión.** Se intentó lanzar vía
+  `workflow_dispatch` (API) sobre la rama de Fase 2 con parámetros mínimos
+  (1 iteración, 4 partidas, 24 simulaciones, CPU) y la API respondió 404:
+  **GitHub solo registra para dispatch los workflows presentes en la rama
+  por defecto (`main`)**, y `train-kaggle.yml` aún no está fusionado ahí
+  (fusionar el PR sin autorización está prohibido). Las credenciales de
+  Kaggle solo existen como secretos de Actions (sus valores son ilegibles
+  por diseño), así que el ciclo real no puede ejecutarse desde fuera sin
+  fusionar. Estado honesto: **lógica corregida y probada por unidades (51
+  pruebas + verificación contra el código fuente real de la CLI 2.2.4);
+  ciclo real completo pendiente**. Prueba pendiente exacta: tras fusionar el
+  PR de Fase 2, pestaña Actions → «Entrenamiento en Kaggle (manual)» →
+  Run workflow con semilla 20261019, iteraciones 1, partidas 4,
+  simulaciones 24, pasos 8, agente red-ter-3, versión 1.0.2, CPU — y
+  registrar run + huella del artefacto recuperado.
 - El presupuesto de GPU sigue siendo opt-in por entrada (`usar-gpu`, por
   defecto CPU) y la frecuencia es exclusivamente manual; la prueba pequeña
   se hace en CPU antes de cualquier intento con GPU.
