@@ -184,7 +184,12 @@ y un runtime propio en TypeScript puro.
 **Decisión.**
 1. **Inferencia en navegador: runtime propio «ts-puro»** que implementa la arquitectura
    documentada `conv-politica-valor-v1` (docs/LBA-MODELO.md §4) con `Float32Array`. Cero
-   dependencias nuevas para inferencia; ~10.708 parámetros en 3×3 ⇒ inferencia < 1 ms.
+   dependencias nuevas para inferencia; ~10.708 parámetros en 3×3. Latencia MEDIDA con
+   benchmark reproducible (`scripts/medir-latencia-inferencia.ts`,
+   `docs/INFORMES/datos/latencia-inferencia-ter3.json`; revisión de Fase 2): mediana
+   0,198 ms / p99 0,245 ms sobre 5000 ejecuciones con entradas reales (Intel Xeon 2
+   núcleos, Node 24, tsx). La cifra original «< 1 ms» carecía de benchmark y se
+   sustituyó por esta medición documentada.
 2. **Pesos: SafeTensors** (`training/weights.safetensors`), F32 LE. Es a la vez el
    checkpoint de entrenamiento en PyTorch y el formato de inferencia en TS (cabecera JSON
    + región de datos: analizable en ~60 líneas, sin código arbitrario, sin pickle).

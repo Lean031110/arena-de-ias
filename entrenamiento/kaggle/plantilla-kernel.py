@@ -46,7 +46,9 @@ def main() -> int:
     run(["git", "-C", str(repo), "checkout", COMMIT])
 
     # Dependencias ligeras que el kernel de Kaggle no trae (torch ya viene).
-    run([sys.executable, "-m", "pip", "install", "--quiet", "safetensors"])
+    # Versión fijada (la misma que requirements-entrenamiento.txt) para
+    # reproducibilidad entre local y Kaggle.
+    run([sys.executable, "-m", "pip", "install", "--quiet", "safetensors==0.8.0"])
 
     argumentos = [
         sys.executable,

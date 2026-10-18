@@ -11,6 +11,7 @@
 import { obtenerJuego } from '../dominio/juegos/registro';
 import { crearAgente, registrarCerebroCargado, desregistrarCerebroCargado, validarConfigAgente } from '../dominio/agentes/registro';
 import { cargarCerebro } from '../dominio/agentes/neural';
+import { comprobarCompatibilidad } from '../dominio/lba/validador';
 import { ejecutarEvaluacion } from '../dominio/motor/evaluacion';
 import { ejecutarPartida, semillaParaJugada } from '../dominio/motor/partida';
 import { crearRng } from '../dominio/motor/rng';
@@ -72,9 +73,13 @@ async function manejar(solicitud: SolicitudTrabajador): Promise<void> {
         canceladas.add(solicitud.id);
         return;
       case 'registrar-cerebro': {
-        // Los pesos viajan validados desde el hilo principal: aquí solo se
+        // Los pesos viajan validados desde el hilo principal; aquí se
         // reconstruye el mapa de tensores y se registra en ESTE hilo para que
         // las partidas del trabajador puedan usar el agente «neural:…».
+        // Defensa en profundidad (revisión de Fase 2): la compatibilidad se
+        // comprueba TAMBIÉN aquí — un error del hilo principal no debe poder
+        // registrar un cerebro incompatible en este hilo.
+        comprobarCompatibilidad(solicitud.manifiesto);
         const tensores = new Map(
           solicitud.tensores.map((t) => [t.nombre, { nombre: t.nombre, forma: [...t.forma], datos: t.datos }]),
         );

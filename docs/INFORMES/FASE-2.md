@@ -1,9 +1,61 @@
 # Informe de Fase 2 — Cerebros .lba, entrenamiento real y liga de versiones
 
-Fecha: 2026-10-19 · Estado: **COMPLETADA EN SU ÁMBITO DECLARADO** (paquete .lba v1,
-registro de cerebros, entrenamiento real PyTorch con paridad demostrada, examen de
-promoción con criterios congelados y workflow Kaggle implementado y marcado como no
-ejecutado). Auditoría de Fase 1 re-ejecutada antes de empezar (§A).
+Fecha: 2026-10-19 · **Revisado y corregido el 2026-10-19 (auditoría independiente
+post-entrega: §A0)**. Estado: **COMPLETADA EN SU ÁMBITO DECLARADO** (paquete
+.lba v1, registro de cerebros, entrenamiento real PyTorch con paridad
+demostrada, examen de promoción con criterios congelados y workflow Kaggle
+implementado). Auditoría de Fase 1 re-ejecutada antes de empezar (§A) y
+auditoría de Fase 2 re-ejecutada tras la entrega (§A0).
+
+## A0. Revisión independiente de la Fase 2 (post-entrega)
+
+Se re-ejecutó TODO desde el estado real del repositorio (HEAD
+`edddd7203720fb6e41121cc51ae59fdcb0cce7b5`, árbol limpio, en sincronía con
+`origin/feat/lba-model-registry-training`). Informe completo con evidencias en
+`docs/INFORMES/AUDITORIA-FASE2.md`. Resumen de lo encontrado y corregido:
+
+**Confirmado (re-ejecutado, no aceptado por documentación):** tsc 0 errores,
+eslint 0 problemas, 225/225 pruebas TS, 27/27 pytest, build OK, ambos .lba
+versionados válidos con huellas internas correctas, resultados de partidas
+idénticos a los documentados (reproducibles), examen de promoción reproducible
+(huellas 1:1, solo cambian fecha/duración), protección del campeón verde,
+pickaxe sin secretos, todos los archivos referenciados existen.
+
+**Fallos encontrados y corregidos en esta revisión:**
+
+1. `modelos/versionados/INDICE.md` declaraba una huella sha256 ERRÓNEA para
+   `red-ter-3@1.0.1` (transcripción incorrecta; el registro JSON de
+   entrenamiento y el archivo real tienen `…f240814d9c3a…`). Corregido.
+2. **Workflow Kaggle roto de verdad**: la CLI 2.2.4 imprime el estado como
+   `KernelWorkerStatus.COMPLETE` (enum completo, con comillas) y el análisis
+   `sed` del workflow capturaba `"KernelWorkerStatus.COMPLETE"`, que no
+   coincidía con ningún patrón → todo trabajo habría agotado el tiempo de
+   espera AUNQUE EL KERNEL TUVIERA ÉXITO. Además: `kernel_datasets` era un
+   campo obsoleto (la CLI 2.x lee `dataset_sources`) y el booleano
+   `usar-gpu` se interpolaba directamente dentro de Python. Reescrito: toda
+   la lógica vive ahora en `entrenamiento/kaggle/flujo.py` con 51 pruebas
+   pytest dedicadas (booleanos por entorno validados, análisis de estados
+   robusto con estados desconocidos = fallo, verificación de runId + huella
+   de la descarga, metadatos correctos).
+3. **Afirmaciones estadísticas sin base** (ver §D.3/D.4 corregidas): «la
+   referencia es invencible», «el umbral 0,60 es matemáticamente
+   inalcanzable» y «inferencia < 1 ms» sin benchmark. La verificación
+   exhaustiva demuestra que el heurístico NO es óptimo y ES derrotable como
+   jugador 2 por un adversario informado; la latencia se midió con benchmark
+   reproducible (mediana 0,198 ms, §B).
+4. Instrucción de instalación rota en §G (safetensors no está en el índice
+   de PyTorch): corregida en dos pasos.
+5. Sin pruebas automatizadas del protocolo `registrar-cerebro` del Web
+   Worker (solo verificación manual en navegador): añadidas 4 pruebas que
+   ejercitan registro → movimiento con el agente neural real → retiro,
+   rechazo de cerebros incompatibles y error controlado. El hallazgo motivó
+   reforzar el trabajador con `comprobarCompatibilidad` en el registro
+   (defensa en profundidad).
+6. ESLint se colgaba con `.venv/` presente: ignorado explícitamente en la
+   configuración.
+
+Batería tras las correcciones: tsc 0 · eslint 0 · **229/229** pruebas TS
+(+4 del trabajador) · **78/78** pytest (+51 del flujo Kaggle) · build OK.
 
 ## A. Estado de la fase
 
@@ -52,8 +104,15 @@ está completo y qué falta** ✓ (este informe + LBA-MODELO.md + ADR-014/015).
   estricto), validador (tamaños antes de descomprimir, traversal, bombas, espejos,
   tabla de arquitectura exacta, compatibilidad), exportador, sha256 vía Web Crypto.
 - **Runtime neuronal «ts-puro»** (`src/dominio/neural/`): arquitectura
-  `conv-politica-valor-v1` en TypeScript puro (10 708 parámetros en 3×3, inferencia
-  < 1 ms) + codificación de observaciones compartida.
+  `conv-politica-valor-v1` en TypeScript puro (10 708 parámetros en 3×3).
+  Latencia MEDIDA con benchmark reproducible
+  (`scripts/medir-latencia-inferencia.ts`, artefacto
+  `docs/INFORMES/datos/latencia-inferencia-ter3.json`): sobre el cerebro real
+  red-ter-3@1.0.1, 5000 ejecuciones (+2000 calentamiento) con 166 entradas
+  reales de partidas, en Intel Xeon de 2 núcleos / Node 24 / tsx: **mediana
+  0,198 ms, media 0,200 ms, p90 0,206 ms, p95 0,211 ms, p99 0,245 ms, máx
+  0,470 ms**. (La cifra anterior «< 1 ms» carecía de benchmark y se sustituye
+  por esta medición documentada.)
 - **Agente nivel 5 real** (`agentes/neural.ts`): MCTS-PUCT con prior de política y
   valor de red, presupuesto exacto, temperatura, compatibilidad dura por `gameId`;
   integrado en el registro de agentes (claves `neural:<id>@<versión>` jugables).
@@ -83,10 +142,12 @@ está completo y qué falta** ✓ (este informe + LBA-MODELO.md + ADR-014/015).
 |---|---|---|---|---|
 | TS | `npx tsc --noEmit` | ✅ 0 errores | — | 0 |
 | TS | `npx eslint .` | ✅ 0 problemas | — | 0 |
-| TS | `npx vitest run` | ✅ 24 archivos | **225** (170 previas + 55 nuevas) | 0 |
-| Python | `pytest entrenamiento/pruebas/` | ✅ | **27** | 0 |
-| TS | `npm run build` | ✅ 250 ms, trabajador incluido | — | 0 |
+| TS | `npx vitest run` | ✅ 25 archivos | **229** (170 previas + 55 F2 + 4 trabajador) | 0 |
+| Python | `pytest entrenamiento/pruebas/` | ✅ | **78** (27 previas + 51 flujo Kaggle) | 0 |
+| TS | `npm run build` | ✅ ~0,3 s, trabajador incluido | — | 0 |
 | Navegador | flujo manual automatizado | ✅ import→activar→partida→empate | — | 0 |
+| Revisión | `scripts/verificar-heuristico.ts` | ✅ exhaustivo | 16 168 estados / 5 478 posiciones | — |
+| Revisión | `scripts/explotar-heuristico.ts` | ✅ exhaustivo | juego-contra-la-política completo | — |
 
 Pruebas nuevas por módulo: lba 23 + paridad 5 + registroCerebros 12 + liga 8 +
 agente neural 7 (TS) y juego/red/lba/autojuego 27 (Python). Cobertura exigida por
@@ -120,24 +181,54 @@ La reanudación conserva al padre intacto (huella d31d1456… verificada tras el
 Lectura honesta: la red de 5 iteraciones vence con claridad al aleatorio y pierde
 ante la búsqueda táctica. Sin afirmación de fuerza más allá de esta muestra.
 
-### D.3 Exámenes de promoción v1 (criterios congelados ADR-007)
+### D.3 Exámenes de promoción v1 (criterios congelados ADR-007; protocolo v1)
 
 | Candidata | Componente | Partidas | V/E/D | Puntuación | IC95 | Veredicto |
 |---|---|---|---|---|---|---|
 | red-ter-3@1.0.0 | referencia (heurístico) | 240 | 0/120/120 | 0,250 | [0,199; 0,308] | NO aprobado |
 | red-ter-3@1.0.1 | referencia (heurístico) | 240 | 0/240/0 | 0,500 | [0,437; 0,563] | NO aprobado |
 
-Mejora real medida entre versiones: de 120 derrotas a 0 (la 1.0.1 aprendió a no
-perder). Aun así no promueve: los criterios son congelados y no se ajustan tras
-ver los datos.
+Lectura corregida (revisión de la Tarea 3), con los cuatro niveles separados:
 
-### D.4 Techo empírico de la referencia (hallazgo clave, medido)
+1. **Pérdida de entrenamiento**: mejoró en ambos runs (2,584→1,899 y
+   1,546→1,246; §D.1) — mejora de ajuste al autojuego, sin traducción
+   automática a fuerza en partida.
+2. **Resultado contra un rival**: mejoró entre versiones en las muestras
+   medidas (de 0,250 a 0,500 contra el heurístico).
+3. **Ausencia observada de derrotas**: 0 derrotas en las 240 partidas del
+   examen de la 1.0.1 (y 100E/100 contra minimax-d9 exacto en la muestra
+   adicional de la revisión).
+4. **Garantía matemática de no perder**: NO existe ni para la red ni para la
+   referencia (§D.4): una muestra sin derrotas no demuestra invencibilidad.
 
-Minimax-d6 contra heurístico, 200 partidas, lados alternos: **200 empates exactos,
-puntuación 0,500**. La referencia congelada de 3×3 es invencible; el umbral v1 de
-0,60 es matemáticamente inalcanzable en ese juego. Consecuencia documentada: los
-exámenes v1 rechazan correctamente (nunca promueven por error) y la recalibración
-queda como PROPUESTA v2 para exámenes futuros (pendiente de ADR; jamás retroactiva).
+Aun así no promueve: los criterios son congelados y no se ajustan tras ver
+los datos. Versión del protocolo usada en ambos exámenes: **v1 (ADR-007)**.
+
+### D.4 Techo EMPÍRICO de la referencia (corregido: no es matemático)
+
+Muestras medidas contra el heurístico de tres-en-raya-3: minimax-d6
+(200 partidas) y minimax-d9 EXACTO añadido en la revisión (100 partidas):
+**todos empates, puntuación 0,500**. Ningún rival medido superó 0,5.
+
+**Corrección de la revisión**: las afirmaciones anteriores «la referencia es
+invencible» y «el umbral 0,60 es matemáticamente inalcanzable» eran
+INFUNDADAS y se retiran. La verificación exhaustiva sobre las 5 478
+posiciones alcanzables (`scripts/verificar-heuristico.ts`) demuestra que el
+heurístico NO es una estrategia óptima (110 candidatas subóptimas: deja
+escapar victorias) y que existen estados alcanzables donde sus jugadas
+convierten tablas en derrota. El análisis exacto de explotabilidad
+(`scripts/explotar-heuristico.ts`, minimax sobre el juego-contra-la-política)
+demuestra que **como jugador 1 es invencible incluso ante un adversario
+omnisciente, pero como jugador 2 PIERDE ante un adversario que conozca su
+política y elija la apertura adecuada**. Consecuencias: (a) las partidas sin
+derrotas son hechos empíricos de esas muestras; (b) el «techo 0,500» es
+empírico, no matemático; (c) en teoría un explotador informado podría
+alcanzar hasta ~0,75 con lados alternos (cota del análisis, sin agente
+construido); (d) los exámenes v1 siguen rechazando correctamente (0,250 y
+0,500 < 0,60) y la recalibración sigue como PROPUESTA v2 para exámenes
+futuros (pendiente de ADR; jamás retroactiva). Artefactos:
+`docs/INFORMES/datos/verificacion-heuristico-ter3.json` y
+`docs/INFORMES/datos/explotabilidad-heuristico-ter3.json`.
 
 ### D.5 Datos ausentes (declarados)
 
@@ -157,37 +248,55 @@ queda como PROPUESTA v2 para exámenes futuros (pendiente de ADR; jamás retroac
   entrenamiento.generar_casetes` y `npx tsx scripts/generar-casete-juegos.ts`).
 - Capturas del ciclo en el navegador: importación de red-ter-3@1.0.1, activación y
   partida real contra el heurístico con resultado empate (coherente con §D.3).
-- CI: el workflow `ci.yml` (tipos + lint + 225 pruebas + build) corre en cada push;
+- CI: el workflow `ci.yml` (tipos + lint + 229 pruebas + build) corre en cada push;
   la ejecución sobre esta rama se verifica tras el push (ver §G).
 
-## F. Estado de Kaggle (honesto)
+## F. Estado de Kaggle (honesto; CORREGIDO en la revisión)
 
-- Workflow `.github/workflows/train-kaggle.yml`: **implementado y sintácticamente
-  validado** (YAML cargado, 14 pasos, 9 entradas). Flujo completo: push del kernel
-  generado con parámetros y commit exacto → sondeo con límite → recuperación de la
-  salida → comprobación de huella → validación TS en el runner → artefacto. Sin .lba
-  recuperado, la ejecución **falla** por diseño.
-- **NO ejecutado contra Kaggle en esta sesión**: se requieren los secretos
-  `KAGGLE_USERNAME` y `KAGGLE_KEY` del usuario. El núcleo del kernel ejecuta el
-  mismo entrenamiento probado en local (runs de §D.1). Para ejecutarlo:
-  configurar los secretos → pestaña Actions → «Entrenamiento en Kaggle (manual)» →
-  Run workflow. El presupuesto de GPU es opt-in por entrada (`usar-gpu`, por
-  defecto CPU) y la frecuencia es exclusivamente manual.
-- Decisión documentada: CLI oficial de Kaggle (v2.2.4, fijada) en lugar de la
-  acción de terceros `KevKibe/kaggle-script-action` (recuperación de salidas fuera
-  de su flujo y riesgo de cadena de suministro; ver `entrenamiento/kaggle/plantilla-kernel.py`).
+- Workflow `.github/workflows/train-kaggle.yml`: **reescrito en la revisión**
+  (la versión anterior tenía el análisis de estados roto: la CLI 2.2.4 imprime
+  `KernelWorkerStatus.COMPLETE` y el `sed` capturaba la cadena con comillas,
+  que no coincidía nunca → agotaba el tiempo incluso con éxito; véanse los
+  detalles en §A0). Toda la lógica vive ahora en `entrenamiento/kaggle/flujo.py`
+  (51 pruebas pytest): booleanos por variable de entorno validada
+  (`bool_desde_env`, jamás interpolados en Python), análisis de estados
+  normalizado con estados desconocidos = fallo (nunca éxito), parámetros
+  validados contra rangos antes de generar el kernel, metadatos con los
+  campos reales de la CLI 2.x (`dataset_sources`), verificación de que la
+  descarga pertenece a ESTA ejecución (runId) y de que la huella SHA-256 del
+  .lba coincide con la del registro, validación TS completa en el runner y
+  fallo global sin .lba. Permisos mínimos (`contents: read`) y sin eco de
+  secretos.
+- Los secretos `KAGGLE_USERNAME` y `KAGGLE_KEY` EXISTEN como secretos de
+  Actions (verificado vía API el 2026-10-19, sin exponer sus valores).
+- **Ejecución de prueba pequeña en CPU**: lanzada como parte de esta revisión
+  para validar el ciclo completo de ida y vuelta con un kernel real; el
+  resultado se documenta en `docs/INFORMES/AUDITORIA-FASE2.md` (§Kaggle) y se
+  actualiza este apartado con la evidencia (run, artefacto recuperado, huella
+  y validación). Mientras esa evidencia no exista, el estado honesto es
+  «preparado y probado por unidades; ciclo real pendiente de registrar».
+- El presupuesto de GPU sigue siendo opt-in por entrada (`usar-gpu`, por
+  defecto CPU) y la frecuencia es exclusivamente manual; la prueba pequeña
+  se hace en CPU antes de cualquier intento con GPU.
+- Decisión documentada: CLI oficial de Kaggle (v2.2.4, fijada, verificada
+  contra su código fuente) en lugar de la acción de terceros
+  `KevKibe/kaggle-script-action` (recuperación de salidas fuera de su flujo y
+  riesgo de cadena de suministro; ver `entrenamiento/kaggle/plantilla-kernel.py`).
 
 ## G. Instrucciones de ejecución (entorno limpio)
 
 ```bash
 git clone https://github.com/Lean031110/arena-de-ias.git && cd arena-de-ias
-npm ci                                  # 225 pruebas con: npm test
+npm ci                                  # 229 pruebas con: npm test
 npm run dev                             # interfaz: http://localhost:5173
 
-# Ciclo completo de entrenamiento (CPU):
-python3 -m venv .venv && . .venv/bin/activate 2>/dev/null || true
-pip install -r entrenamiento/requirements-entrenamiento.txt --index-url https://download.pytorch.org/whl/cpu
-python -m pytest entrenamiento/pruebas/ -q          # 27 pruebas
+# Ciclo completo de entrenamiento (CPU) — instalación en DOS pasos
+# (corregido: safetensors no está en el índice de PyTorch, un solo
+#  pip -r --index-url FALLA):
+python3 -m venv .venv && . .venv/bin/activate
+pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+pip install safetensors==0.8.0 numpy==2.1.3 pytest==9.0.2
+python -m pytest entrenamiento/pruebas/ -q          # 78 pruebas
 python -m entrenamiento.entrenar --semilla 20261019 \
   --iteraciones 5 --partidas 32 --simulaciones 96 --salida modelos/candidatas
 
@@ -197,6 +306,12 @@ npx tsx scripts/verificar-lba.ts modelos/versionados/red-ter-3@1.0.1.lba 20
 npx tsx scripts/examinar.ts modelos/versionados/red-ter-3@1.0.1.lba 240 200
 # Regenerar casetes de paridad:
 python -m entrenamiento.generar_casetes && npx tsx scripts/generar-casete-juegos.ts
+# Verificación exhaustiva del heurístico (5 478 posiciones) y su
+# explotabilidad (nuevos de la revisión):
+npx tsx scripts/verificar-heuristico.ts
+npx tsx scripts/explotar-heuristico.ts
+# Benchmark de latencia de inferencia (documentado):
+npx tsx scripts/medir-latencia-inferencia.ts
 ```
 
 En el navegador: pestaña «Cerebros» → importar un `.lba` → «Activar para jugar» →

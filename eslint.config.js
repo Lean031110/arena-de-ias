@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import { globalIgnores } from 'eslint/config';
 
 export default tseslint.config([
-  globalIgnores(['dist', 'coverage', 'node_modules']),
+  // «salida-kernel» y «.venv» son artefactos locales del flujo de Kaggle y
+  // del entrenamiento Python: nunca se lintean (revisión de Fase 2).
+  globalIgnores(['dist', 'coverage', 'node_modules', '.venv', 'salida-kernel']),
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

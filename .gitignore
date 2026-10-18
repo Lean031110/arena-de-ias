@@ -26,3 +26,14 @@ descargas/
 
 # Candidatas de entrenamiento en curso (los modelos promovidos se versionan en modelos/versionados/)
 modelos/candidatas/
+
+# Entorno virtual de Python (pruebas locales de entrenamiento/)
+.venv/
+
+# Archivos generados por el flujo de Kaggle (train-kaggle.yml) en el runner
+entrenamiento/kaggle/kernel.py
+entrenamiento/kaggle/kernel-metadata.json
+entrenamiento/kaggle/slug.txt
+
+# Salida del kernel descargada por el workflow
+salida-kernel/
