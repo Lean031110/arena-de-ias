@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  calidad:
+    name: Tipos, lint, pruebas y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias (versiones exactas)
+        run: npm ci
+
+      - name: Comprobación de tipos (TypeScript estricto)
+        run: npm run typecheck
+
+      - name: Lint (ESLint + typescript-eslint)
+        run: npm run lint
+
+      - name: Pruebas (Vitest, suite completa del dominio)
+        run: npm test
+
+      - name: Build de producción (Vite, trabajador web incluido)
+        run: npm run build
+
+      - name: Subir artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
