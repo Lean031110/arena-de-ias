@@ -63,8 +63,9 @@ async function main(): Promise<void> {
           : [{ id: rival.id, config: rival.config }, { id: clave, config: { simulaciones: 200 } }],
       });
       duraciones.push(registro.duracionMs);
-      if (registro.resultado?.tipo === 'empate') e++;
-      else if (registro.resultado.ganador === (neuralPrimero ? 1 : 2)) v++;
+      const resultado = registro.resultado;
+      if (resultado === null || resultado.tipo === 'empate') e++;
+      else if (resultado.ganador === (neuralPrimero ? 1 : 2)) v++;
       else d++;
     }
     const n = partidasPorRival;
