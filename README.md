@@ -18,8 +18,8 @@ disputan torneos con estadística honesta.
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0 | Arquitectura, auditoría, plan, criterios de aceptación | ✅ Completada |
-| 1 | Motor de juegos, 6 variantes, 4 niveles de agentes, evaluación real, CI | ✅ Completada (la red neuronal queda para Fase 2, ver informe) |
-| 2 | Persistencia completa de cerebros, entrenamiento, panel experimental | ⏳ Pendiente |
+| 1 | Motor de juegos, 6 variantes, 4 niveles de agentes, evaluación real, CI | ✅ Completada (re-auditada en Fase 2: 170/170, artefactos reproducibles) |
+| 2 | Cerebros .lba, entrenamiento real PyTorch, registro, liga de versiones | ✅ Completada en su ámbito (re-auditada y corregida: workflow Kaggle reparado, afirmaciones estadísticas verificadas — 229/229 TS + 78/78 pytest; ver AUDITORIA-FASE2.md) |
 | 3 | Equipos, plantel, mentoría | ⏳ Pendiente |
 | 4 | Torneos, Elo, Glicko-2, liga histórica | ⏳ Pendiente |
 | 5 | Juegos restantes, descubrimiento de estrategias, garantías | ⏳ Pendiente |
@@ -63,6 +63,8 @@ Mediciones de evaluación y solucionador (scripts con `tsx`, solo desarrollo):
 ```bash
 npm run medir:evaluacion   # evaluación round-robin de la Fase 1 → JSON con resultados reales
 npm run medir:solucionador # resolución exacta de tableros pequeños → JSON con resultados reales
+npx tsx scripts/verificar-lba.ts modelos/versionados/red-ter-3@1.0.1.lba 20   # valida un cerebro y juega partidas reales
+npx tsx scripts/examinar.ts modelos/versionados/red-ter-3@1.0.1.lba 240 200   # examen de promoción reproducible
 ```
 
 ## Estructura del proyecto
@@ -70,18 +72,22 @@ npm run medir:solucionador # resolución exacta de tableros pequeños → JSON c
 ```
 arena-de-ias/
 ├── docs/                    # documentación de arquitectura, decisiones, modelo de datos…
-│   └── INFORMES/            # informes verificables por fase
-├── scripts/                 # scripts de medición real (evaluación, solucionador)
+│   └── INFORMES/            # informes verificables por fase (incluye auditorías)
+├── entrenamiento/           # backend Python: motor gemelo, red PyTorch, autojuego,
+│   │                        # entrenador CLI, lba.py y pruebas (78) + kaggle/
+├── modelos/versionados/     # cerebros .lba promovidos con índice de huellas
+├── scripts/                 # mediciones reales + verificación y examen de cerebros
 ├── src/
 │   ├── dominio/             # NÚCLEO: independiente de React y del navegador
-│   │   ├── motor/           # contratos de juegos, RNG con semilla, partidas, eventos,
-│   │   │                    # evaluación, estadística, exportación, solucionador exacto
+│   │   ├── motor/           # contratos, RNG, partidas, eventos, evaluación, solucionador
 │   │   ├── juegos/          # reglas de cada juego (tres en raya, gomoku, cuatro en raya)
-│   │   └── agentes/         # niveles 1-4: aleatorio, heurístico, minimax α-β, MCTS
-│   ├── aplicacion/          # servicios: persistencia IndexedDB, acceso a almacenamiento
-│   ├── trabajadores/        # Web Worker de partidas/evaluaciones + cliente con reintento
-│   └── interfaz/            # React: componentes, ganchos y estilos (español, accesible)
-├── .github/workflows/       # CI: GitHub Actions (tipos + lint + pruebas + build)
+│   │   ├── agentes/         # niveles 1-5: aleatorio, heurístico, minimax, MCTS, neural
+│   │   ├── lba/             # paquete .lba: esquema, validador, exportador, safetensors
+│   │   └── neural/          # runtime ts-puro (conv-politica-valor-v1) y observaciones
+│   ├── aplicacion/          # IndexedDB, registro de cerebros, liga de versiones
+│   ├── trabajadores/        # Web Worker: partidas, evaluaciones e inferencia neuronal
+│   └── interfaz/            # React: arena, cerebros, evolución, resultados… (español)
+├── .github/workflows/       # CI (tipos+lint+pruebas+build) y entrenamiento Kaggle manual
 └── PROMPT_MAESTRO.md        # especificación maestra del proyecto (token redactado)
 ```
 
@@ -109,9 +115,25 @@ previstas en [`docs/JUEGOS.md`](./docs/JUEGOS.md) y planificadas para la Fase 5.
 | 2 | Heurístico | gana si puede, bloquea amenazas inmediatas, evaluación posicional |
 | 3 | Minimax | negamax con poda alfa-beta, ordenación de jugadas y presupuesto de nodos/profundidad |
 | 4 | MCTS | UCT con rollouts aleatorios acotados y presupuesto exacto de simulaciones |
+| 5 | Neuronal | red de política y valor (paquete `.lba`, runtime ts-puro) + MCTS-PUCT guiado |
 
-El nivel 5 (red de política y valor, estilo AlphaZero) tiene contrato definido y estado
-«Pendiente»: no se incluye ninguna interfaz que simule estar entrenada.
+El nivel 5 aparece al activar un cerebro `.lba` en la pestaña «Cerebros»: sin
+paquete importado no hay agente neuronal simulado.
+
+## Cerebros .lba (Fase 2)
+
+- **Formato** [`docs/LBA-MODELO.md`](./docs/LBA-MODELO.md): ZIP con lista blanca,
+  manifiesto validado con Zod, checksums SHA-256, pesos SafeTensors F32 y
+  compatibilidad dura juego⇄modelo. La importación nunca ejecuta código arbitrario.
+- **Entrenamiento** (`entrenamiento/`): PyTorch + autojuego PUCT en Python, con
+  paridad TS⇄PyTorch demostrada por pruebas cruzadas. Continuable con
+  `--reanudar` (el padre nunca se sobreescribe).
+- **Registro y liga**: IndexedDB con estados derivados de eventos reales; examen
+  de promoción con criterios congelados (ADR-007) que protege al campeón.
+- **Modelos versionados**: [`modelos/versionados/`](./modelos/versionados/) con
+  índice de huellas y exámenes.
+- **Kaggle**: workflow manual (`train-kaggle.yml`) con recuperación verificable del
+  `.lba`; requiere secretos `KAGGLE_USERNAME`/`KAGGLE_KEY` (no ejecutado sin ellos).
 
 ## Reproducibilidad
 

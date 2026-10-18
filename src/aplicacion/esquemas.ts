@@ -145,3 +145,44 @@ export function validarEvento(valor: unknown): RegistroEventoExterno | null {
   const analisis = esquemaEvento.safeParse(valor);
   return analisis.success ? (analisis.data as RegistroEventoExterno) : null;
 }
+
+/* ------------------------- Cerebros .lba (Fase 2) ------------------------- */
+
+import type { EventoCerebro, RegistroCerebro } from './almacen';
+import { esquemaManifiestoLBA } from '../dominio/lba/esquema';
+
+export const esquemaRegistroCerebro = z.object({
+  agentId: z.string().min(1),
+  brainVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+  manifiesto: esquemaManifiestoLBA,
+  paquete: z.instanceof(Uint8Array),
+  huellaPaquete: z.string().regex(/^[0-9a-f]{64}$/),
+  importadoEn: z.string().min(1),
+});
+
+export const esquemaEventoCerebro = z.object({
+  id: z.string().min(1),
+  fecha: z.string().min(1),
+  tipo: z.enum([
+    'importado',
+    'clonado',
+    'rama',
+    'examen',
+    'promocion',
+    'archivado',
+    'incompatible',
+  ]),
+  agentId: z.string().min(1),
+  brainVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+  datos: z.record(z.string(), z.unknown()).optional(),
+});
+
+export function validarRegistroCerebro(valor: unknown): RegistroCerebro | null {
+  const analisis = esquemaRegistroCerebro.safeParse(valor);
+  return analisis.success ? (analisis.data as RegistroCerebro) : null;
+}
+
+export function validarEventoCerebro(valor: unknown): EventoCerebro | null {
+  const analisis = esquemaEventoCerebro.safeParse(valor);
+  return analisis.success ? (analisis.data as EventoCerebro) : null;
+}

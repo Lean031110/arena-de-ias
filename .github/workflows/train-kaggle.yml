@@ -1,0 +1,174 @@
+name: Entrenamiento en Kaggle (manual)
+
+# Flujo GitHub Actions → Kaggle → .lba (Tarea F; corregido tras la revisión).
+#
+# Solo ejecución MANUAL (workflow_dispatch): no se consume GPU en cada push.
+# Secretos requeridos (jamás en código, logs ni artefactos):
+#   - KAGGLE_USERNAME
+#   - KAGGLE_KEY
+#
+# Toda la lógica vive en `entrenamiento/kaggle/flujo.py` (probada con pytest,
+# 51 pruebas en `entrenamiento/pruebas/test_kaggle_flujo.py`); el YAML solo
+# orquesta. Correcciones aplicadas en esta revisión:
+#
+#   1. NINGÚN booleano de GitHub se interpola dentro de Python: el valor llega
+#      como texto por la variable de entorno USAR_GPU y `bool_desde_env` lo
+#      valida y convierte explícitamente ("true"/"false"; cualquier otra cosa
+#      es error, jamás un falso silencioso).
+#   2. El estado del kernel se analiza con `interpretar_estado_salida`
+#      (normaliza mayúsculas, comillas y «Failure message»; reconoce el
+#      formato real de la CLI 2.2.4 —imprime el enum completo, p. ej.
+#      KernelWorkerStatus.COMPLETE— y el de la 1.x). Éxito terminal:
+#      complete. Error terminal: error y cancelAcknowledged. Un estado
+#      DESCONOCIDO hace fallar el trabajo (nunca se trata como éxito).
+#   3. Los parámetros de entrenamiento se validan contra rangos fijados antes
+#      de generar el kernel; los metadatos usan los campos que la CLI 2.x lee
+#      realmente (dataset_sources, no el obsoleto kernel_datasets) y la CLI
+#      queda fijada en requirements-kaggle.txt (kaggle==2.2.4, comprobada).
+#   4. Un kernel que termina sin .lba válido hace FALLAR el trabajo
+#      (`verificar_recuperacion`).
+#   5. La descarga debe pertenecer a ESTA ejecución: el runId del registro
+#      descargado debe coincidir con GITHUB_RUN_ID-ATTEMPT y la huella SHA-256
+#      del .lba debe coincidir con la declarada por el registro.
+#   6. Instalación limpia y reproducible: npm ci (versiones exactas) para la
+#      validación TS; pip con versión fijada para la CLI; el kernel instala
+#      safetensors==0.8.0 (torch ya viene en Kaggle).
+#   7. Pruebas: ver entrenamiento/pruebas/test_kaggle_flujo.py (51 casos).
+#   8. Permisos mínimos (contents: read); los secretos solo se escriben en
+#      $KAGGLE_CONFIG_DIR/kaggle.json (permisos 600, fuera de artefactos) y
+#      nunca se imprimen.
+
+on:
+  workflow_dispatch:
+    inputs:
+      semilla:
+        description: 'Semilla del entrenamiento (reproducibilidad)'
+        required: true
+        default: '20261019'
+      iteraciones:
+        description: 'Iteraciones de autojuego'
+        required: true
+        default: '5'
+      partidas:
+        description: 'Partidas por iteración'
+        required: true
+        default: '32'
+      simulaciones:
+        description: 'Simulaciones MCTS por jugada'
+        required: true
+        default: '96'
+      pasos:
+        description: 'Pasos de optimización por iteración'
+        required: true
+        default: '48'
+      agente:
+        description: 'Identificador del agente (agentId)'
+        required: true
+        default: 'red-ter-3'
+      version-cerebro:
+        description: 'Versión del cerebro (X.Y.Z)'
+        required: true
+        default: '1.0.2'
+      minutos-limite:
+        description: 'Minutos máximos de espera del kernel'
+        required: true
+        default: '45'
+      usar-gpu:
+        description: 'Solicitar GPU en Kaggle (false = CPU)'
+        required: true
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  entrenar-kaggle:
+    name: Enviar kernel, esperar y recuperar el .lba
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # Los secretos NUNCA se imprimen; el CLI los lee del entorno.
+      KAGGLE_CONFIG_DIR: ${{ github.workspace }}/.kaggle
+    steps:
+      - name: Clonar repositorio (commit exacto)
+        uses: actions/checkout@v4
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias TS (versiones exactas, npm ci)
+        run: npm ci
+
+      - name: Instalar Python 3.12 y CLI de Kaggle (versión fijada)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r entrenamiento/requirements-kaggle.txt
+
+      - name: Pruebas del flujo de Kaggle (antes de gastar cuota)
+        run: python -m pytest entrenamiento/pruebas/test_kaggle_flujo.py -q
+
+      - name: Preparar credenciales de Kaggle (sin eco)
+        run: |
+          mkdir -p "$KAGGLE_CONFIG_DIR"
+          chmod 700 "$KAGGLE_CONFIG_DIR"
+          printf '{"username":"%s","key":"%s"}\n' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > "$KAGGLE_CONFIG_DIR/kaggle.json"
+          chmod 600 "$KAGGLE_CONFIG_DIR/kaggle.json"
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+
+      - name: Generar kernel con parámetros validados
+        env:
+          # Booleano por ENTORNO (texto "true"/"false"), convertido y validado
+          # en Python por bool_desde_env: jamás interpolado en código Python.
+          USAR_GPU: ${{ inputs.usar-gpu }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          COMMIT_EXACTO: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          SEMILLA: ${{ inputs.semilla }}
+          ITERACIONES: ${{ inputs.iteraciones }}
+          PARTIDAS: ${{ inputs.partidas }}
+          SIMULACIONES: ${{ inputs.simulaciones }}
+          PASOS: ${{ inputs.pasos }}
+          EVAL_PARTIDAS: '40'
+          AGENT_ID: ${{ inputs.agente }}
+          VERSION_CEREBRO: ${{ inputs.version-cerebro }}
+        run: python -m entrenamiento.kaggle.flujo generar
+
+      - name: Enviar kernel a Kaggle
+        run: |
+          kaggle kernels push -p entrenamiento/kaggle
+          echo "Kernel enviado. Esperando ejecución…"
+
+      - name: Esperar a que el kernel termine (análisis robusto, con límite)
+        run: |
+          SLUG="$(cat entrenamiento/kaggle/slug.txt)"
+          python -m entrenamiento.kaggle.flujo esperar "$SLUG" "${{ inputs.minutos-limite }}"
+
+      - name: Recuperar la salida real del kernel
+        run: |
+          SLUG="$(cat entrenamiento/kaggle/slug.txt)"
+          mkdir -p salida-kernel
+          kaggle kernels output "$SLUG" -p salida-kernel
+          echo "--- archivos recuperados ---"
+          ls -la salida-kernel
+
+      - name: Verificar que el .lba pertenece a ESTA ejecución (huella + runId)
+        run: python -m entrenamiento.kaggle.flujo verificar salida-kernel "${{ github.run_id }}-${{ github.run_attempt }}"
+
+      - name: Validar el paquete en el runner (validador TS completo + partidas reales)
+        run: npx tsx scripts/verificar-lba.ts "$LBA_RECUPERADO" 12
+
+      - name: Publicar .lba y registro como artefacto del workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: cerebro-entrenado-${{ inputs.agente }}-${{ inputs.version-cerebro }}
+          path: |
+            salida-kernel/*.lba
+            salida-kernel/*-registro.json
+          retention-days: 30

@@ -1,0 +1,179 @@
+{
+  "fecha": "2026-10-18T19:50:16.329Z",
+  "juego": "tres-en-raya-3",
+  "reglasVersion": "1",
+  "metodo": "enumeración BFS exhaustiva de estados alcanzables + valor exacto por solucionador (negamax completo con TT) + comprobación de conservación de valor de todos los candidatos del heurístico + validación cruzada del agente real con 8 semillas/estado",
+  "estados": {
+    "alcanzables": 16168,
+    "posicionesTableroTurno": 5478,
+    "terminales": 2862,
+    "noTerminales": 13306
+  },
+  "candidatos": {
+    "comprobados": 16462,
+    "suboptimos": 110,
+    "perdedores": 62,
+    "degradaciones": {
+      "1→0": 432,
+      "0→-1": 486,
+      "1→-1": 72
+    },
+    "porTipo": {
+      "victoriaInmediata": 7272,
+      "bloqueo": 4388,
+      "posicional": 1646
+    }
+  },
+  "agenteReal": {
+    "jugadas": 106448,
+    "suboptimas": 880,
+    "perdedoras": 496,
+    "semillasPorEstado": 8
+  },
+  "valorInicialDesdeMover": 0,
+  "optimalidadDemostrada": false,
+  "garantiaNoPerderDemostrada": false,
+  "veredicto": "NO PROBADO: existen jugadas posibles del heurístico que convierten posiciones ganadoras o tablas en derrotas. Las conclusiones deben limitarse a «no se observaron derrotas en la muestra evaluada».",
+  "suboptimos": [
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2",
+      "tipo": "posicional",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 1)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 2)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 3)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 4)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 5)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 6)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 7)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,2,0,0,0,0,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":0,\"columna\":2}}",
+      "jugada": "b2 (real, semilla 8)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2",
+      "tipo": "posicional",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 1)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 2)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 3)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 4)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 5)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 6)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 7)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[1,0,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 8)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[0,1,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2",
+      "tipo": "posicional",
+      "valorAntes": 1,
+      "valorDespues": 0
+    },
+    {
+      "estado": "{\"celdas\":[0,1,0,0,0,0,2,0,0],\"turno\":1,\"jugadas\":2,\"ultima\":{\"fila\":2,\"columna\":0}}",
+      "jugada": "b2 (real, semilla 1)",
+      "tipo": "agente-real",
+      "valorAntes": 1,
+      "valorDespues": 0
+    }
+  ]
+}

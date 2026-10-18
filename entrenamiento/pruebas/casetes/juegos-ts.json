@@ -1,0 +1,212 @@
+{
+  "descripcion": "Partidas jugadas por el motor TypeScript (heurístico vs MCTS, semillas fijas); el motor Python debe reproducirlas con el mismo resultado aplicando la notación.",
+  "simulacionesMCTS": 60,
+  "juegos": [
+    {
+      "indice": 0,
+      "semilla": 700000,
+      "notacion": [
+        "b2",
+        "a1",
+        "c1",
+        "a3",
+        "a2",
+        "c2",
+        "b3",
+        "b1",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "empate"
+      },
+      "jugadas": 9
+    },
+    {
+      "indice": 1,
+      "semilla": 700001,
+      "notacion": [
+        "b2",
+        "b1",
+        "a1",
+        "c3",
+        "a3",
+        "a2",
+        "c1"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 7
+    },
+    {
+      "indice": 2,
+      "semilla": 700002,
+      "notacion": [
+        "b2",
+        "a2",
+        "a1",
+        "a3",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 5
+    },
+    {
+      "indice": 3,
+      "semilla": 700003,
+      "notacion": [
+        "b2",
+        "c1",
+        "a1",
+        "b1",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 5
+    },
+    {
+      "indice": 4,
+      "semilla": 700004,
+      "notacion": [
+        "b2",
+        "a2",
+        "a1",
+        "c3",
+        "c1",
+        "b1",
+        "a3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 7
+    },
+    {
+      "indice": 5,
+      "semilla": 700005,
+      "notacion": [
+        "b2",
+        "b3",
+        "a1",
+        "b1",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 5
+    },
+    {
+      "indice": 6,
+      "semilla": 700006,
+      "notacion": [
+        "b2",
+        "b1",
+        "a1",
+        "c3",
+        "a3",
+        "a2",
+        "c1"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 7
+    },
+    {
+      "indice": 7,
+      "semilla": 700007,
+      "notacion": [
+        "b2",
+        "c2",
+        "a1",
+        "b1",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 5
+    },
+    {
+      "indice": 8,
+      "semilla": 700008,
+      "notacion": [
+        "b2",
+        "c2",
+        "a1",
+        "b1",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 5
+    },
+    {
+      "indice": 9,
+      "semilla": 700009,
+      "notacion": [
+        "b2",
+        "c2",
+        "a1",
+        "c3",
+        "c1",
+        "b1",
+        "a3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 7
+    },
+    {
+      "indice": 10,
+      "semilla": 700010,
+      "notacion": [
+        "b2",
+        "a3",
+        "a1",
+        "c3",
+        "b3",
+        "b1",
+        "c2",
+        "a2",
+        "c1"
+      ],
+      "resultado": {
+        "tipo": "empate"
+      },
+      "jugadas": 9
+    },
+    {
+      "indice": 11,
+      "semilla": 700011,
+      "notacion": [
+        "b2",
+        "a2",
+        "a1",
+        "c1",
+        "c3"
+      ],
+      "resultado": {
+        "tipo": "victoria",
+        "ganador": 1
+      },
+      "jugadas": 5
+    }
+  ]
+}

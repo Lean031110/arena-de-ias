@@ -7,12 +7,13 @@
 import type { ConfigAgentePartida, ConfigPartida, RegistroPartida } from '../dominio/motor/partida';
 import type { ConfigEvaluacion, RegistroEvaluacion, ResultadoCancelado } from '../dominio/motor/evaluacion';
 import type { EstadisticasBusqueda, Jugador } from '../dominio/motor/tipos';
+import type { ManifiestoLBA } from '../dominio/lba/esquema';
 import { ejecutarEvaluacion as ejecutarEvaluacionDominio } from '../dominio/motor/evaluacion';
 import { ejecutarPartida as ejecutarPartidaDominio, semillaParaJugada } from '../dominio/motor/partida';
 import { obtenerJuego } from '../dominio/juegos/registro';
 import { crearAgente } from '../dominio/agentes/registro';
 import { crearRng } from '../dominio/motor/rng';
-import type { SolicitudTrabajador, RespuestaTrabajador } from './protocolo';
+import type { SolicitudTrabajador, RespuestaTrabajador, TensorParaTrabajador } from './protocolo';
 
 interface Pendiente {
   resolver: (valor: RespuestaTrabajador) => void;
@@ -76,6 +77,28 @@ export class ClienteTrabajador {
       this.pendientes.set(solicitud.id, { resolver, rechazar });
       trabajador.postMessage(solicitud);
     });
+  }
+
+  /** Registra un cerebro .lba en el TRABAJADOR (inferencia fuera del hilo principal). */
+  async registrarCerebro(
+    manifiesto: ManifiestoLBA,
+    tensores: readonly TensorParaTrabajador[],
+  ): Promise<string> {
+    const id = generarIdCorto();
+    const respuesta = await this.pedir({ tipo: 'registrar-cerebro', id, manifiesto, tensores });
+    if (respuesta.tipo !== 'cerebro-registrado') {
+      throw new Error(`respuesta inesperada del trabajador: ${respuesta.tipo}`);
+    }
+    return respuesta.clave;
+  }
+
+  /** Retira un cerebro del trabajador. */
+  async retirarCerebro(clave: string): Promise<void> {
+    const id = generarIdCorto();
+    const respuesta = await this.pedir({ tipo: 'retirar-cerebro', id, clave });
+    if (respuesta.tipo !== 'cerebro-retirado') {
+      throw new Error(`respuesta inesperada del trabajador: ${respuesta.tipo}`);
+    }
   }
 
   /** Calcula una jugada concreta (para partidas interactivas). */

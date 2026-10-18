@@ -1,4 +1,4 @@
-import { CATALOGO_AGENTES } from '../../dominio/agentes/registro';
+import { CATALOGO_AGENTES, cerebrosCargados, definicionCerebroCargado } from '../../dominio/agentes/registro';
 import type { DefinicionAgente } from '../../dominio/agentes/registro';
 import { configPorDefecto } from '../../dominio/agentes/registro';
 
@@ -15,11 +15,18 @@ interface PropsSelectorAgente {
 }
 
 export function SelectorAgente({ etiqueta, valor, onCambio, excluidos }: PropsSelectorAgente) {
-  const definiciones = CATALOGO_AGENTES.filter(
-    (agente) =>
-      (agente.estado === 'disponible' || agente.estado === 'humano') &&
-      !(excluidos ?? []).includes(agente.id),
-  );
+  const definiciones: readonly DefinicionAgente[] = [
+    ...CATALOGO_AGENTES.filter(
+      (agente) =>
+        (agente.estado === 'disponible' || agente.estado === 'humano') &&
+        !(excluidos ?? []).includes(agente.id),
+    ),
+    // Cerebros .lba activados en runtime (Fase 2): agentes reales con pesos.
+    ...cerebrosCargados()
+      .map((c) => definicionCerebroCargado(c.idAgente))
+      .filter((d): d is DefinicionAgente => d !== null)
+      .map((d) => ({ ...d, nombre: d.nombre })),
+  ];
 
   const definicionActual = definiciones.find((agente) => agente.id === valor.id);
 

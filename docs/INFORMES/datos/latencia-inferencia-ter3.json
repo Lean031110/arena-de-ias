@@ -1,0 +1,38 @@
+{
+  "fecha": "2026-10-18T19:55:34.550Z",
+  "que": "latencia de UNA inferencia completa (política+valor) del runtime ts-puro",
+  "runtime": {
+    "tipo": "TypeScript puro (sin librerías externas), función adelante()",
+    "arquitectura": "conv-politica-valor-v1",
+    "juego": "tres-en-raya-3",
+    "parametros": 10708,
+    "cerebro": "red-ter-3@1.0.1",
+    "archivo": "modelos/versionados/red-ter-3@1.0.1.lba"
+  },
+  "condiciones": {
+    "ejecuciones": 5000,
+    "calentamiento": 2000,
+    "entradasDistintas": 166,
+    "origenEntradas": "posiciones reales de partidas entre agentes aleatorios (semillas fijas 1000+i*10+j)",
+    "hilo": "hilo principal de Node (un solo hilo)",
+    "ejecucion": "tsx (TypeScript ejecutado directamente, JIT de V8 tras calentamiento)"
+  },
+  "hardware": {
+    "modeloCpu": "Intel(R) Xeon(R) Processor",
+    "nucleosLogicos": 2,
+    "cargaMedia1m": 0.19,
+    "plataforma": "linux 5.10.134-013.15.kangaroo.al8.x86_64",
+    "host": "c-XadXaX-XcfX-aeefXadcaXfX",
+    "node": "v24.21.0"
+  },
+  "resultados": {
+    "medianaMs": 0.1981,
+    "mediaMs": 0.1998,
+    "p90Ms": 0.2064,
+    "p95Ms": 0.2109,
+    "p99Ms": 0.2447,
+    "minimoMs": 0.1855,
+    "maximoMs": 0.4695
+  },
+  "reproducibilidad": "npx tsx scripts/medir-latencia-inferencia.ts (entradas con semillas fijas; las latencias absolutas varían con la carga de la máquina: citar hardware y fecha)"
+}

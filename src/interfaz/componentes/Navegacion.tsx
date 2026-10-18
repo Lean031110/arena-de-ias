@@ -1,4 +1,4 @@
-export type Vista = 'arena' | 'resultados' | 'registro' | 'agentes' | 'guia';
+export type Vista = 'arena' | 'resultados' | 'cerebros' | 'liga' | 'registro' | 'agentes' | 'guia';
 
 interface PropsNavegacion {
   vista: Vista;
@@ -8,6 +8,8 @@ interface PropsNavegacion {
 const ELEMENTOS: ReadonlyArray<{ id: Vista; etiqueta: string }> = [
   { id: 'arena', etiqueta: 'Arena' },
   { id: 'resultados', etiqueta: 'Resultados' },
+  { id: 'cerebros', etiqueta: 'Cerebros' },
+  { id: 'liga', etiqueta: 'Evolución' },
   { id: 'registro', etiqueta: 'Registro' },
   { id: 'agentes', etiqueta: 'Agentes' },
   { id: 'guia', etiqueta: 'Guía' },
