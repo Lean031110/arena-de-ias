@@ -16,7 +16,6 @@ import { tablaArquitectura } from '../neural/red';
 import { observarTablero } from '../neural/observacion';
 import { crearRng } from '../motor/rng';
 import { ejecutarPartida, type Decisor } from '../motor/partida';
-import { agenteAleatorio } from './aleatorio';
 import {
   crearAgente,
   registrarCerebroCargado,
@@ -123,7 +122,6 @@ describe('agente neuronal', () => {
     const pesosA = pesosSembrados(45);
     const pesosB = pesosSembrados(45);
     const estado = tresEnRaya3.crearEstadoInicial();
-    const obs = observarTablero(estado, 3, 3);
     const cerebroA = cargarCerebro('a', '1', 'tres-en-raya-3', ARQ, pesosA);
     const cerebroB = cargarCerebro('b', '1', 'tres-en-raya-3', ARQ, pesosB);
     const salidaA = crearAgenteNeural(cerebroA, { simulaciones: 5 }).elegirMovimiento(

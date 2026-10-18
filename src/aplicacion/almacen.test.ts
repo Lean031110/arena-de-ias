@@ -98,7 +98,8 @@ describe('almacenamiento IndexedDB (con fake-indexeddb)', () => {
     await almacen.guardarPartida(partida);
     // Inyectamos un registro corrupto directamente en IndexedDB.
     await new Promise<void>((resolver, rechazar) => {
-      const solicitud = indexedDB.open('arena-de-ias', 1);
+      // Sin versión explícita: abre la existente (v2 tras la migración de Fase 2).
+      const solicitud = indexedDB.open('arena-de-ias');
       solicitud.onsuccess = () => {
         const bd = solicitud.result;
         const tx = bd.transaction('partidas', 'readwrite');
